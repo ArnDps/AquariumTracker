@@ -254,6 +254,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         get => selectedAquarium;
         set
         {
+            if (value is null)
+            {
+                return;
+            }
+
             if (SetField(ref selectedAquarium, value))
             {
                 SelectedPlant = null;
@@ -307,8 +312,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public void DeleteSelectedAquarium()
     {
-        var index = Aquariums.IndexOf(SelectedAquarium);
-        Aquariums.Remove(SelectedAquarium);
+        var aquarium = SelectedAquarium;
+        var index = Aquariums.IndexOf(aquarium);
+        Aquariums.Remove(aquarium);
 
         if (Aquariums.Count == 0)
         {
