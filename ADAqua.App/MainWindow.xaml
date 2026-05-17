@@ -14,6 +14,13 @@
         <Style TargetType="TextBox">
             <Setter Property="Margin" Value="0,4,12,12" />
             <Setter Property="MinHeight" Value="30" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="LongTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="MinHeight" Value="90" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
         </Style>
         <Style TargetType="Button">
             <Setter Property="MinHeight" Value="34" />
@@ -101,7 +108,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
                                     <TextBlock Text="Notes" />
-                                    <TextBox Text="{Binding SelectedAquarium.Notes, UpdateSourceTrigger=PropertyChanged}" MinHeight="90" TextWrapping="Wrap" AcceptsReturn="True" />
+                                    <TextBox Text="{Binding SelectedAquarium.Notes, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LongTextBoxStyle}" />
                                 </StackPanel>
                             </Grid>
                         </TabItem>
@@ -139,7 +146,7 @@
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="Notes" />
-                                        <TextBox Text="{Binding NewMeasurement.Notes}" />
+                                        <TextBox Text="{Binding NewMeasurement.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
                                 <Button DockPanel.Dock="Top" Content="Ajouter la mesure" Click="AddMeasurement_Click" HorizontalAlignment="Left" />
@@ -175,7 +182,7 @@
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="Notes" />
-                                        <TextBox Text="{Binding NewPlant.Notes}" />
+                                        <TextBox Text="{Binding NewPlant.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
                                 <Button DockPanel.Dock="Top" Content="Ajouter la plante" Click="AddPlant_Click" HorizontalAlignment="Left" />
@@ -211,7 +218,7 @@
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="Notes" />
-                                        <TextBox Text="{Binding NewPopulation.Notes}" />
+                                        <TextBox Text="{Binding NewPopulation.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
                                 <Button DockPanel.Dock="Top" Content="Ajouter la population" Click="AddPopulation_Click" HorizontalAlignment="Left" />
