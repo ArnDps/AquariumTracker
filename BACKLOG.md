@@ -13,10 +13,10 @@
 - [x] AQ09 - P1 - Stabiliser le socle de lancement Visual Studio : verifier le projet de demarrage, ajouter un profil de lancement clair et documenter la configuration locale MySQL.
 - [x] AQ10 - P1 - Ajouter un vrai ecran de configuration de la connexion MySQL avec test de connexion, sauvegarde locale securisee et messages utilisateur explicites.
 - [x] AQ11 - P1 - Remplacer le stockage en remplacement complet des collections enfants par des operations plus fines : ajout, modification, suppression et conservation de l'historique des mesures.
+- [x] AQ12 - P1 - Ajouter les operations CRUD completes pour les aquariums, les plantes et la population, avec suppression confirmee et gestion des erreurs.
 
 ## A faire
 
-- [ ] AQ12 - P1 - Ajouter les operations CRUD completes pour les aquariums, les plantes et la population, avec suppression confirmee et gestion des erreurs.
 - [ ] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.
 - [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees.
 - [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical.

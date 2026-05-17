@@ -69,7 +69,10 @@
             <Border Background="White" BorderBrush="#C8D8DA" BorderThickness="1" Padding="18">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Aquariums" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-                    <Button DockPanel.Dock="Bottom" Content="Nouvel aquarium" Click="NewAquarium_Click" Margin="0,12,0,0" />
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                        <Button Content="Nouvel aquarium" Click="NewAquarium_Click" Margin="0,0,0,8" />
+                        <Button Content="Supprimer aquarium" Click="DeleteAquarium_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                    </StackPanel>
                     <ListBox ItemsSource="{Binding Aquariums}" SelectedItem="{Binding SelectedAquarium}" DisplayMemberPath="Name" BorderBrush="#C8D8DA" />
                 </DockPanel>
             </Border>
@@ -186,8 +189,11 @@
                                         <TextBox Text="{Binding NewPlant.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
-                                <Button DockPanel.Dock="Top" Content="Ajouter la plante" Click="AddPlant_Click" HorizontalAlignment="Left" />
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}">
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                                    <Button Content="Ajouter la plante" Click="AddPlant_Click" />
+                                    <Button Content="Supprimer la plante" Click="DeletePlant_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                                </StackPanel>
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}" SelectedItem="{Binding SelectedPlant}" IsReadOnly="False">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Nom" Binding="{Binding CommonName}" Width="*" />
                                         <DataGridTextColumn Header="Scientifique" Binding="{Binding ScientificName}" Width="*" />
@@ -222,8 +228,11 @@
                                         <TextBox Text="{Binding NewPopulation.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
-                                <Button DockPanel.Dock="Top" Content="Ajouter la population" Click="AddPopulation_Click" HorizontalAlignment="Left" />
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Population}">
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                                    <Button Content="Ajouter la population" Click="AddPopulation_Click" />
+                                    <Button Content="Supprimer la population" Click="DeletePopulation_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                                </StackPanel>
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Population}" SelectedItem="{Binding SelectedPopulation}" IsReadOnly="False">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Nom" Binding="{Binding CommonName}" Width="*" />
                                         <DataGridTextColumn Header="Espece" Binding="{Binding SpeciesName}" Width="*" />

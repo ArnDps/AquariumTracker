@@ -143,6 +143,36 @@ public partial class MainWindow : Window
         viewModel.AddAquarium();
     }
 
+    private async void DeleteAquarium_Click(object sender, RoutedEventArgs e)
+    {
+        var aquarium = viewModel.SelectedAquarium;
+        var result = MessageBox.Show(
+            $"Supprimer l'aquarium \"{aquarium.Name}\" et toutes ses donnees associees ?",
+            "Confirmation de suppression",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            if (repository is not null)
+            {
+                await repository.DeleteAsync(aquarium.Id);
+            }
+
+            viewModel.DeleteSelectedAquarium();
+            viewModel.StatusMessage = "Aquarium supprime.";
+        }
+        catch (Exception exception)
+        {
+            viewModel.StatusMessage = $"Suppression de l'aquarium impossible: {exception.Message}";
+        }
+    }
+
     private void AddMeasurement_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddMeasurement();
@@ -153,15 +183,57 @@ public partial class MainWindow : Window
         viewModel.AddPlant();
     }
 
+    private void DeletePlant_Click(object sender, RoutedEventArgs e)
+    {
+        if (viewModel.SelectedPlant is null)
+        {
+            viewModel.StatusMessage = "Selectionne une plante a supprimer.";
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Supprimer la plante \"{viewModel.SelectedPlant.CommonName}\" ?",
+            "Confirmation de suppression",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            viewModel.DeleteSelectedPlant();
+        }
+    }
+
     private void AddPopulation_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddPopulation();
+    }
+
+    private void DeletePopulation_Click(object sender, RoutedEventArgs e)
+    {
+        if (viewModel.SelectedPopulation is null)
+        {
+            viewModel.StatusMessage = "Selectionne une population a supprimer.";
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Supprimer \"{viewModel.SelectedPopulation.CommonName}\" de la population ?",
+            "Confirmation de suppression",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            viewModel.DeleteSelectedPopulation();
+        }
     }
 }
 
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private Aquarium selectedAquarium;
+    private AquariumPlant? selectedPlant;
+    private PopulationMember? selectedPopulation;
     private string statusMessage = "Pret. MySQL est optionnel au demarrage pour garder l'application utilisable hors ligne.";
 
     public MainWindowViewModel()
@@ -180,7 +252,27 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public Aquarium SelectedAquarium
     {
         get => selectedAquarium;
-        set => SetField(ref selectedAquarium, value);
+        set
+        {
+            if (SetField(ref selectedAquarium, value))
+            {
+                SelectedPlant = null;
+                SelectedPopulation = null;
+                OnPropertyChanged(nameof(StartedOnDateTime));
+            }
+        }
+    }
+
+    public AquariumPlant? SelectedPlant
+    {
+        get => selectedPlant;
+        set => SetField(ref selectedPlant, value);
+    }
+
+    public PopulationMember? SelectedPopulation
+    {
+        get => selectedPopulation;
+        set => SetField(ref selectedPopulation, value);
     }
 
     public DateTime StartedOnDateTime
@@ -213,6 +305,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         StatusMessage = "Nouvel aquarium ajoute.";
     }
 
+    public void DeleteSelectedAquarium()
+    {
+        var index = Aquariums.IndexOf(SelectedAquarium);
+        Aquariums.Remove(SelectedAquarium);
+
+        if (Aquariums.Count == 0)
+        {
+            AddAquarium();
+            StatusMessage = "Aquarium supprime. Un nouvel aquarium local a ete prepare.";
+            return;
+        }
+
+        SelectedAquarium = Aquariums[Math.Clamp(index, 0, Aquariums.Count - 1)];
+    }
+
     public void ReplaceAquariums(IReadOnlyList<Aquarium> aquariums)
     {
         Aquariums.Clear();
@@ -243,19 +350,47 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public void AddPlant()
     {
         SelectedAquarium.Plants.Add(NewPlant);
+        SelectedPlant = NewPlant;
         NewPlant = new AquariumPlant();
         OnPropertyChanged(nameof(NewPlant));
         RefreshSelectedAquarium();
         StatusMessage = "Plante ajoutee.";
     }
 
+    public void DeleteSelectedPlant()
+    {
+        if (SelectedPlant is null)
+        {
+            return;
+        }
+
+        SelectedAquarium.Plants.Remove(SelectedPlant);
+        SelectedPlant = null;
+        RefreshSelectedAquarium();
+        StatusMessage = "Plante supprimee. Clique sur Sauvegarder pour persister la modification.";
+    }
+
     public void AddPopulation()
     {
         SelectedAquarium.Population.Add(NewPopulation);
+        SelectedPopulation = NewPopulation;
         NewPopulation = new PopulationMember();
         OnPropertyChanged(nameof(NewPopulation));
         RefreshSelectedAquarium();
         StatusMessage = "Population ajoutee.";
+    }
+
+    public void DeleteSelectedPopulation()
+    {
+        if (SelectedPopulation is null)
+        {
+            return;
+        }
+
+        SelectedAquarium.Population.Remove(SelectedPopulation);
+        SelectedPopulation = null;
+        RefreshSelectedAquarium();
+        StatusMessage = "Population supprimee. Clique sur Sauvegarder pour persister la modification.";
     }
 
     private void RefreshSelectedAquarium()

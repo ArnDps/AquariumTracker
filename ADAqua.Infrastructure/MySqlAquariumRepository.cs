@@ -57,6 +57,19 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         await transaction.CommitAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(Guid aquariumId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await ExecuteAsync(
+            connection,
+            transaction: null,
+            "DELETE FROM Aquariums WHERE Id = @Id;",
+            cancellationToken,
+            Parameter("@Id", aquariumId.ToString()));
+    }
+
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(connectionString);
@@ -269,7 +282,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             parameters.ToArray());
     }
 
-    private static async Task ExecuteAsync(MySqlConnection connection, MySqlTransaction transaction, string sql, CancellationToken cancellationToken, params MySqlParameter[] parameters)
+    private static async Task ExecuteAsync(MySqlConnection connection, MySqlTransaction? transaction, string sql, CancellationToken cancellationToken, params MySqlParameter[] parameters)
     {
         await using var command = new MySqlCommand(sql, connection, transaction);
         command.Parameters.AddRange(parameters);
