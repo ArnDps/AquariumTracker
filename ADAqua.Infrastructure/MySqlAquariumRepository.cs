@@ -291,7 +291,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
     private static MySqlParameter Parameter(string name, object? value)
     {
-        return new MySqlParameter(name, value ?? DBNull.Value);
+        return new MySqlParameter
+        {
+            ParameterName = name,
+            Value = value ?? DBNull.Value
+        };
     }
 
     private static decimal? ReadNullableDecimal(MySqlDataReader reader, int ordinal)
