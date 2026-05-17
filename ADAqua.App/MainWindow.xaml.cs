@@ -17,14 +17,24 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = viewModel;
 
-        var connectionString = Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING");
+        var connectionString = ResolveConnectionString();
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
             repository = new MySqlAquariumRepository(connectionString);
             viewModel.StatusMessage = "MySQL configure via ADAQUA_MYSQL_CONNECTION_STRING.";
         }
+        else
+        {
+            viewModel.StatusMessage = "Variable ADAQUA_MYSQL_CONNECTION_STRING introuvable. Redemarre Visual Studio si tu viens de la creer.";
+        }
     }
 
+    private static string? ResolveConnectionString()
+    {
+        return Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.Process)
+            ?? Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.User)
+            ?? Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.Machine);
+    }
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         if (repository is null)
