@@ -111,7 +111,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task LoadAquariumsAsync()
+    private async Task LoadAquariumsAsync(Guid? selectedAquariumId = null)
     {
         if (repository is null)
         {
@@ -120,6 +120,11 @@ public partial class MainWindow : Window
 
         var aquariums = await repository.GetAllAsync();
         viewModel.ReplaceAquariums(aquariums);
+        if (selectedAquariumId is not null)
+        {
+            viewModel.SelectAquarium(selectedAquariumId.Value);
+        }
+
         viewModel.StatusMessage = aquariums.Count == 0
             ? "MySQL connecte. Aucun aquarium en base pour le moment."
             : $"MySQL connecte. {aquariums.Count} aquarium(s) charge(s).";
@@ -133,9 +138,18 @@ public partial class MainWindow : Window
             return;
         }
 
-        var store = new ResilientAquariumStore(repository);
-        var result = await store.SaveAsync(viewModel.SelectedAquarium);
-        viewModel.StatusMessage = result.Message;
+        try
+        {
+            var aquariumId = viewModel.SelectedAquarium.Id;
+            await repository.InitializeAsync();
+            await repository.SaveAsync(viewModel.SelectedAquarium);
+            await LoadAquariumsAsync(aquariumId);
+            viewModel.StatusMessage = "Aquarium sauvegarde dans MySQL.";
+        }
+        catch (Exception exception)
+        {
+            viewModel.StatusMessage = $"Sauvegarde MySQL impossible: {exception.Message}";
+        }
     }
 
     private void NewAquarium_Click(object sender, RoutedEventArgs e)
@@ -341,6 +355,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         SelectedAquarium = Aquariums[0];
+    }
+
+    public void SelectAquarium(Guid aquariumId)
+    {
+        var aquarium = Aquariums.FirstOrDefault(candidate => candidate.Id == aquariumId);
+        if (aquarium is not null)
+        {
+            SelectedAquarium = aquarium;
+        }
     }
 
     public void AddMeasurement()
