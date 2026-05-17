@@ -91,7 +91,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         {
             var aquarium = new Aquarium
             {
-                Id = Guid.Parse(reader.GetString(0)),
+                Id = ReadGuid(reader, 0),
                 Name = reader.GetString(1),
                 VolumeLiters = reader.GetDecimal(2),
                 WaterType = reader.GetString(3),
@@ -108,11 +108,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         await using var command = new MySqlCommand("SELECT Id, AquariumId, MeasuredAt, Ammonia, Nitrites, Nitrates, Ph, Gh, Kh, TemperatureCelsius, Notes FROM WaterMeasurements;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(Guid.Parse(reader.GetString(1)), out var aquarium))
+        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
         {
             aquarium.Measurements.Add(new WaterParameters
             {
-                Id = Guid.Parse(reader.GetString(0)),
+                Id = ReadGuid(reader, 0),
                 MeasuredAt = reader.GetDateTime(2),
                 AmmoniaMgPerLiter = ReadNullableDecimal(reader, 3),
                 NitritesMgPerLiter = ReadNullableDecimal(reader, 4),
@@ -131,11 +131,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         await using var command = new MySqlCommand("SELECT Id, AquariumId, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes FROM AquariumPlants;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(Guid.Parse(reader.GetString(1)), out var aquarium))
+        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
         {
             aquarium.Plants.Add(new AquariumPlant
             {
-                Id = Guid.Parse(reader.GetString(0)),
+                Id = ReadGuid(reader, 0),
                 CommonName = reader.GetString(2),
                 ScientificName = reader.GetString(3),
                 GrowthSpeed = Enum.Parse<PlantGrowthSpeed>(reader.GetString(4)),
@@ -150,11 +150,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         await using var command = new MySqlCommand("SELECT Id, AquariumId, SpeciesName, CommonName, Type, Quantity, Notes FROM PopulationMembers;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(Guid.Parse(reader.GetString(1)), out var aquarium))
+        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
         {
             aquarium.Population.Add(new PopulationMember
             {
-                Id = Guid.Parse(reader.GetString(0)),
+                Id = ReadGuid(reader, 0),
                 SpeciesName = reader.GetString(2),
                 CommonName = reader.GetString(3),
                 Type = Enum.Parse<PopulationType>(reader.GetString(4)),
@@ -301,5 +301,16 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     private static decimal? ReadNullableDecimal(MySqlDataReader reader, int ordinal)
     {
         return reader.IsDBNull(ordinal) ? null : reader.GetDecimal(ordinal);
+    }
+
+    private static Guid ReadGuid(MySqlDataReader reader, int ordinal)
+    {
+        var value = reader.GetValue(ordinal);
+        return value switch
+        {
+            Guid guid => guid,
+            string text => Guid.Parse(text),
+            _ => Guid.Parse(Convert.ToString(value) ?? throw new InvalidOperationException($"Column {ordinal} is not a valid Guid."))
+        };
     }
 }
