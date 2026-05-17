@@ -5,6 +5,13 @@ namespace ADAqua.Infrastructure;
 
 public sealed class MySqlAquariumRepository(string connectionString) : IAquariumRepository
 {
+    private static readonly HashSet<string> ChildTables =
+    [
+        "WaterMeasurements",
+        "AquariumPlants",
+        "PopulationMembers"
+    ];
+
     public async Task<IReadOnlyList<Aquarium>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(connectionString);
@@ -46,7 +53,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             Parameter("@StartedOn", aquarium.StartedOn.ToDateTime(TimeOnly.MinValue)),
             Parameter("@Notes", aquarium.Notes));
 
-        await ReplaceChildrenAsync(connection, transaction, aquarium, cancellationToken);
+        await SaveChildrenAsync(connection, transaction, aquarium, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
 
@@ -144,19 +151,27 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         }
     }
 
-    private static async Task ReplaceChildrenAsync(MySqlConnection connection, MySqlTransaction transaction, Aquarium aquarium, CancellationToken cancellationToken)
+    private static async Task SaveChildrenAsync(MySqlConnection connection, MySqlTransaction transaction, Aquarium aquarium, CancellationToken cancellationToken)
     {
-        foreach (var table in new[] { "WaterMeasurements", "AquariumPlants", "PopulationMembers" })
-        {
-            await ExecuteAsync(connection, transaction, $"DELETE FROM {table} WHERE AquariumId = @AquariumId;", cancellationToken, Parameter("@AquariumId", aquarium.Id.ToString()));
-        }
-
         foreach (var measurement in aquarium.Measurements)
         {
             await ExecuteAsync(
                 connection,
                 transaction,
-                "INSERT INTO WaterMeasurements (Id, AquariumId, MeasuredAt, Ammonia, Nitrites, Nitrates, Ph, Gh, Kh, TemperatureCelsius, Notes) VALUES (@Id, @AquariumId, @MeasuredAt, @Ammonia, @Nitrites, @Nitrates, @Ph, @Gh, @Kh, @TemperatureCelsius, @Notes);",
+                """
+                INSERT INTO WaterMeasurements (Id, AquariumId, MeasuredAt, Ammonia, Nitrites, Nitrates, Ph, Gh, Kh, TemperatureCelsius, Notes)
+                VALUES (@Id, @AquariumId, @MeasuredAt, @Ammonia, @Nitrites, @Nitrates, @Ph, @Gh, @Kh, @TemperatureCelsius, @Notes)
+                ON DUPLICATE KEY UPDATE
+                    MeasuredAt = VALUES(MeasuredAt),
+                    Ammonia = VALUES(Ammonia),
+                    Nitrites = VALUES(Nitrites),
+                    Nitrates = VALUES(Nitrates),
+                    Ph = VALUES(Ph),
+                    Gh = VALUES(Gh),
+                    Kh = VALUES(Kh),
+                    TemperatureCelsius = VALUES(TemperatureCelsius),
+                    Notes = VALUES(Notes);
+                """,
                 cancellationToken,
                 Parameter("@Id", measurement.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
@@ -171,12 +186,23 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@Notes", measurement.Notes));
         }
 
+        await DeleteMissingChildrenAsync(connection, transaction, "WaterMeasurements", aquarium.Id, aquarium.Measurements.Select(measurement => measurement.Id), cancellationToken);
+
         foreach (var plant in aquarium.Plants)
         {
             await ExecuteAsync(
                 connection,
                 transaction,
-                "INSERT INTO AquariumPlants (Id, AquariumId, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes) VALUES (@Id, @AquariumId, @CommonName, @ScientificName, @GrowthSpeed, @LightNeed, @Notes);",
+                """
+                INSERT INTO AquariumPlants (Id, AquariumId, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes)
+                VALUES (@Id, @AquariumId, @CommonName, @ScientificName, @GrowthSpeed, @LightNeed, @Notes)
+                ON DUPLICATE KEY UPDATE
+                    CommonName = VALUES(CommonName),
+                    ScientificName = VALUES(ScientificName),
+                    GrowthSpeed = VALUES(GrowthSpeed),
+                    LightNeed = VALUES(LightNeed),
+                    Notes = VALUES(Notes);
+                """,
                 cancellationToken,
                 Parameter("@Id", plant.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
@@ -187,12 +213,23 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@Notes", plant.Notes));
         }
 
+        await DeleteMissingChildrenAsync(connection, transaction, "AquariumPlants", aquarium.Id, aquarium.Plants.Select(plant => plant.Id), cancellationToken);
+
         foreach (var member in aquarium.Population)
         {
             await ExecuteAsync(
                 connection,
                 transaction,
-                "INSERT INTO PopulationMembers (Id, AquariumId, SpeciesName, CommonName, Type, Quantity, Notes) VALUES (@Id, @AquariumId, @SpeciesName, @CommonName, @Type, @Quantity, @Notes);",
+                """
+                INSERT INTO PopulationMembers (Id, AquariumId, SpeciesName, CommonName, Type, Quantity, Notes)
+                VALUES (@Id, @AquariumId, @SpeciesName, @CommonName, @Type, @Quantity, @Notes)
+                ON DUPLICATE KEY UPDATE
+                    SpeciesName = VALUES(SpeciesName),
+                    CommonName = VALUES(CommonName),
+                    Type = VALUES(Type),
+                    Quantity = VALUES(Quantity),
+                    Notes = VALUES(Notes);
+                """,
                 cancellationToken,
                 Parameter("@Id", member.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
@@ -202,6 +239,34 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@Quantity", member.Quantity),
                 Parameter("@Notes", member.Notes));
         }
+
+        await DeleteMissingChildrenAsync(connection, transaction, "PopulationMembers", aquarium.Id, aquarium.Population.Select(member => member.Id), cancellationToken);
+    }
+
+    private static async Task DeleteMissingChildrenAsync(MySqlConnection connection, MySqlTransaction transaction, string tableName, Guid aquariumId, IEnumerable<Guid> retainedIds, CancellationToken cancellationToken)
+    {
+        if (!ChildTables.Contains(tableName))
+        {
+            throw new InvalidOperationException($"Unsupported child table '{tableName}'.");
+        }
+
+        var ids = retainedIds.Select(id => id.ToString()).ToList();
+        if (ids.Count == 0)
+        {
+            await ExecuteAsync(connection, transaction, $"DELETE FROM {tableName} WHERE AquariumId = @AquariumId;", cancellationToken, Parameter("@AquariumId", aquariumId.ToString()));
+            return;
+        }
+
+        var parameterNames = ids.Select((_, index) => $"@Id{index}").ToList();
+        var parameters = new List<MySqlParameter> { Parameter("@AquariumId", aquariumId.ToString()) };
+        parameters.AddRange(ids.Select((id, index) => Parameter(parameterNames[index], id)));
+
+        await ExecuteAsync(
+            connection,
+            transaction,
+            $"DELETE FROM {tableName} WHERE AquariumId = @AquariumId AND Id NOT IN ({string.Join(", ", parameterNames)});",
+            cancellationToken,
+            parameters.ToArray());
     }
 
     private static async Task ExecuteAsync(MySqlConnection connection, MySqlTransaction transaction, string sql, CancellationToken cancellationToken, params MySqlParameter[] parameters)
