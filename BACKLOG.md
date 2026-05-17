@@ -1,4 +1,4 @@
-﻿# Backlog ADAqua / AquariumTracker
+# Backlog ADAqua / AquariumTracker
 
 ## Termine
 
@@ -10,10 +10,10 @@
 - [x] AQ06 - P2 - Ajouter une premiere interface WPF permettant de creer un aquarium, saisir ses mesures d'eau, ses plantes et sa population.
 - [x] AQ07 - P2 - Permettre le lancement de l'application sans MySQL configure, avec activation MySQL via `ADAQUA_MYSQL_CONNECTION_STRING`.
 - [x] AQ08 - P2 - Corriger la solution pour que `ADAqua.App` soit le projet de demarrage naturel dans Visual Studio.
+- [x] AQ09 - P1 - Stabiliser le socle de lancement Visual Studio : verifier le projet de demarrage, ajouter un profil de lancement clair et documenter la configuration locale MySQL.
 
 ## A faire
 
-- [ ] AQ09 - P1 - En cours - Stabiliser le socle de lancement Visual Studio : verifier le projet de demarrage, ajouter un profil de lancement clair et documenter la configuration locale MySQL.
 - [ ] AQ10 - P1 - Ajouter un vrai ecran de configuration de la connexion MySQL avec test de connexion, sauvegarde locale securisee et messages utilisateur explicites.
 - [ ] AQ11 - P1 - Remplacer le stockage en remplacement complet des collections enfants par des operations plus fines : ajout, modification, suppression et conservation de l'historique des mesures.
 - [ ] AQ12 - P1 - Ajouter les operations CRUD completes pour les aquariums, les plantes et la population, avec suppression confirmee et gestion des erreurs.

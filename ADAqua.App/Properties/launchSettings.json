@@ -1,0 +1,14 @@
+﻿{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "ADAqua.App": {
+      "commandName": "Project"
+    },
+    "ADAqua.App (MySQL local)": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ADAQUA_MYSQL_CONNECTION_STRING": "Server=localhost;Database=ADAqua;Uid=root;Pwd=CHANGE_ME;"
+      }
+    }
+  }
+}
