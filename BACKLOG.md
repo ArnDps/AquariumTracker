@@ -11,10 +11,10 @@
 - [x] AQ07 - P2 - Permettre le lancement de l'application sans MySQL configure, avec activation MySQL via `ADAQUA_MYSQL_CONNECTION_STRING`.
 - [x] AQ08 - P2 - Corriger la solution pour que `ADAqua.App` soit le projet de demarrage naturel dans Visual Studio.
 - [x] AQ09 - P1 - Stabiliser le socle de lancement Visual Studio : verifier le projet de demarrage, ajouter un profil de lancement clair et documenter la configuration locale MySQL.
+- [x] AQ10 - P1 - Ajouter un vrai ecran de configuration de la connexion MySQL avec test de connexion, sauvegarde locale securisee et messages utilisateur explicites.
 
 ## A faire
 
-- [ ] AQ10 - P1 - Ajouter un vrai ecran de configuration de la connexion MySQL avec test de connexion, sauvegarde locale securisee et messages utilisateur explicites.
 - [ ] AQ11 - P1 - Remplacer le stockage en remplacement complet des collections enfants par des operations plus fines : ajout, modification, suppression et conservation de l'historique des mesures.
 - [ ] AQ12 - P1 - Ajouter les operations CRUD completes pour les aquariums, les plantes et la population, avec suppression confirmee et gestion des erreurs.
 - [ ] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.

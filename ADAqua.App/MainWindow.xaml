@@ -52,6 +52,7 @@
                     <TextBlock Text="Gestion des aquariums, parametres d'eau, plantes et population" Foreground="#D8EFF0" Margin="0,4,0,0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Configurer MySQL" Click="ConfigureDatabase_Click" />
                     <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" />
                     <Button Content="Sauvegarder" Click="Save_Click" />
                 </StackPanel>

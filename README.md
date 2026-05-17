@@ -1,4 +1,4 @@
-﻿# ADAqua / AquariumTracker
+# ADAqua / AquariumTracker
 
 ADAqua est une application WPF C# pour gerer des aquariums, leurs parametres d'eau, leurs plantes et leur population.
 
@@ -13,6 +13,9 @@ ADAqua est une application WPF C# pour gerer des aquariums, leurs parametres d'e
 `ADAqua.Domain` et `ADAqua.Infrastructure` sont des bibliotheques de classes. Elles ne doivent pas etre lancees directement.
 
 ## Configuration MySQL locale
+
+Depuis l'application, le bouton `Configurer MySQL` ouvre un ecran dedie pour saisir, tester et enregistrer la connexion. Le mot de passe est chiffre localement avec DPAPI pour le compte Windows courant dans `%AppData%\ADAqua\mysql-settings.json`.
+
 
 La base attendue est `ADAqua`. Le script de creation est disponible ici :
 

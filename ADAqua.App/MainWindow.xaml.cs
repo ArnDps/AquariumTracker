@@ -10,31 +10,49 @@ namespace ADAqua.App;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel viewModel = new();
-    private readonly MySqlAquariumRepository? repository;
+    private MySqlAquariumRepository? repository;
+    private string? activeConnectionString;
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = viewModel;
 
-        var connectionString = ResolveConnectionString();
-        if (!string.IsNullOrWhiteSpace(connectionString))
+        var resolved = ResolveConnectionConfiguration();
+        if (!string.IsNullOrWhiteSpace(resolved.ConnectionString))
         {
-            repository = new MySqlAquariumRepository(connectionString);
-            viewModel.StatusMessage = "MySQL configure via ADAQUA_MYSQL_CONNECTION_STRING.";
+            ApplyConnectionString(resolved.ConnectionString, resolved.Message);
         }
         else
         {
-            viewModel.StatusMessage = "Variable ADAQUA_MYSQL_CONNECTION_STRING introuvable. Redemarre Visual Studio si tu viens de la creer.";
+            viewModel.StatusMessage = "MySQL non configure. Utilise Configurer MySQL pour enregistrer une connexion locale.";
         }
     }
 
-    private static string? ResolveConnectionString()
+    private static (string? ConnectionString, string Message) ResolveConnectionConfiguration()
     {
-        return Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.Process)
+        var savedSettings = MySqlConfigurationStore.Load();
+        if (savedSettings is not null)
+        {
+            return (savedSettings.BuildConnectionString(), "MySQL configure depuis la configuration locale securisee.");
+        }
+
+        var environmentConnectionString = Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.Process)
             ?? Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.User)
             ?? Environment.GetEnvironmentVariable("ADAQUA_MYSQL_CONNECTION_STRING", EnvironmentVariableTarget.Machine);
+
+        return string.IsNullOrWhiteSpace(environmentConnectionString)
+            ? (null, string.Empty)
+            : (environmentConnectionString, "MySQL configure via ADAQUA_MYSQL_CONNECTION_STRING.");
     }
+
+    private void ApplyConnectionString(string connectionString, string message)
+    {
+        activeConnectionString = connectionString;
+        repository = new MySqlAquariumRepository(connectionString);
+        viewModel.StatusMessage = message;
+    }
+
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         if (repository is null)
@@ -44,11 +62,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var aquariums = await repository.GetAllAsync();
-            viewModel.ReplaceAquariums(aquariums);
-            viewModel.StatusMessage = aquariums.Count == 0
-                ? "MySQL connecte. Aucun aquarium en base pour le moment."
-                : $"MySQL connecte. {aquariums.Count} aquarium(s) charge(s).";
+            await LoadAquariumsAsync();
         }
         catch (Exception exception)
         {
@@ -56,11 +70,33 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void ConfigureDatabase_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = MySqlConfigurationStore.CreateDefault(activeConnectionString);
+        var configurationWindow = new MySqlConfigurationWindow(settings)
+        {
+            Owner = this
+        };
+
+        if (configurationWindow.ShowDialog() == true && !string.IsNullOrWhiteSpace(configurationWindow.ConnectionString))
+        {
+            ApplyConnectionString(configurationWindow.ConnectionString, "Configuration MySQL enregistree et active.");
+            try
+            {
+                await LoadAquariumsAsync();
+            }
+            catch (Exception exception)
+            {
+                viewModel.StatusMessage = $"Configuration enregistree, mais lecture MySQL impossible: {exception.Message}";
+            }
+        }
+    }
+
     private async void InitializeDatabase_Click(object sender, RoutedEventArgs e)
     {
         if (repository is null)
         {
-            viewModel.StatusMessage = "Definis ADAQUA_MYSQL_CONNECTION_STRING pour activer MySQL.";
+            viewModel.StatusMessage = "Configure MySQL avant d'initialiser le schema.";
             return;
         }
 
@@ -75,11 +111,25 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task LoadAquariumsAsync()
+    {
+        if (repository is null)
+        {
+            return;
+        }
+
+        var aquariums = await repository.GetAllAsync();
+        viewModel.ReplaceAquariums(aquariums);
+        viewModel.StatusMessage = aquariums.Count == 0
+            ? "MySQL connecte. Aucun aquarium en base pour le moment."
+            : $"MySQL connecte. {aquariums.Count} aquarium(s) charge(s).";
+    }
+
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
         if (repository is null)
         {
-            viewModel.StatusMessage = "Mode local: aucune chaine de connexion MySQL n'est configuree.";
+            viewModel.StatusMessage = "Mode local: configure MySQL pour sauvegarder en base.";
             return;
         }
 
