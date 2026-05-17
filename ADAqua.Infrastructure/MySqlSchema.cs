@@ -1,0 +1,58 @@
+namespace ADAqua.Infrastructure;
+
+public static class MySqlSchema
+{
+    public static IReadOnlyList<string> Statements { get; } =
+    [
+        """
+        CREATE TABLE IF NOT EXISTS Aquariums (
+            Id CHAR(36) NOT NULL PRIMARY KEY,
+            Name VARCHAR(120) NOT NULL,
+            VolumeLiters DECIMAL(8,2) NOT NULL,
+            WaterType VARCHAR(80) NOT NULL,
+            StartedOn DATE NOT NULL,
+            Notes TEXT NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS WaterMeasurements (
+            Id CHAR(36) NOT NULL PRIMARY KEY,
+            AquariumId CHAR(36) NOT NULL,
+            MeasuredAt DATETIME NOT NULL,
+            Ammonia DECIMAL(6,3) NULL,
+            Nitrites DECIMAL(6,3) NULL,
+            Nitrates DECIMAL(6,3) NULL,
+            Ph DECIMAL(4,2) NULL,
+            Gh DECIMAL(5,2) NULL,
+            Kh DECIMAL(5,2) NULL,
+            TemperatureCelsius DECIMAL(5,2) NULL,
+            Notes TEXT NOT NULL,
+            CONSTRAINT FK_WaterMeasurements_Aquariums FOREIGN KEY (AquariumId) REFERENCES Aquariums(Id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS AquariumPlants (
+            Id CHAR(36) NOT NULL PRIMARY KEY,
+            AquariumId CHAR(36) NOT NULL,
+            CommonName VARCHAR(120) NOT NULL,
+            ScientificName VARCHAR(160) NOT NULL,
+            GrowthSpeed VARCHAR(30) NOT NULL,
+            LightNeed VARCHAR(80) NOT NULL,
+            Notes TEXT NOT NULL,
+            CONSTRAINT FK_AquariumPlants_Aquariums FOREIGN KEY (AquariumId) REFERENCES Aquariums(Id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS PopulationMembers (
+            Id CHAR(36) NOT NULL PRIMARY KEY,
+            AquariumId CHAR(36) NOT NULL,
+            SpeciesName VARCHAR(160) NOT NULL,
+            CommonName VARCHAR(120) NOT NULL,
+            Type VARCHAR(40) NOT NULL,
+            Quantity INT NOT NULL,
+            Notes TEXT NOT NULL,
+            CONSTRAINT FK_PopulationMembers_Aquariums FOREIGN KEY (AquariumId) REFERENCES Aquariums(Id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """
+    ];
+}

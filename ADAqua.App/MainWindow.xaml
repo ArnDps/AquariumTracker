@@ -1,0 +1,233 @@
+<Window x:Class="ADAqua.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="ADAqua" Height="760" Width="1180" MinHeight="640" MinWidth="980"
+        Loaded="Window_Loaded"
+        Background="#F3F7F8">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#172326" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="0,4,12,12" />
+            <Setter Property="MinHeight" Value="30" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="#156B6F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#156B6F" />
+        </Style>
+        <Style TargetType="DataGrid">
+            <Setter Property="AutoGenerateColumns" Value="False" />
+            <Setter Property="CanUserAddRows" Value="False" />
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="GridLinesVisibility" Value="Horizontal" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#0E3F46" Padding="24,18">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="ADAqua" FontSize="30" FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="Gestion des aquariums, parametres d'eau, plantes et population" Foreground="#D8EFF0" Margin="0,4,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" />
+                    <Button Content="Sauvegarder" Click="Save_Click" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Margin="24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Background="White" BorderBrush="#C8D8DA" BorderThickness="1" Padding="18">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Aquariums" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <Button DockPanel.Dock="Bottom" Content="Nouvel aquarium" Click="NewAquarium_Click" Margin="0,12,0,0" />
+                    <ListBox ItemsSource="{Binding Aquariums}" SelectedItem="{Binding SelectedAquarium}" DisplayMemberPath="Name" BorderBrush="#C8D8DA" />
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2" Background="White" BorderBrush="#C8D8DA" BorderThickness="1" Padding="20">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}" Foreground="#53696E" Margin="0,14,0,0" TextWrapping="Wrap" />
+
+                    <TabControl>
+                        <TabItem Header="Fiche">
+                            <Grid Margin="0,18,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Nom" />
+                                    <TextBox Text="{Binding SelectedAquarium.Name, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Volume (L)" />
+                                    <TextBox Text="{Binding SelectedAquarium.VolumeLiters, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0">
+                                    <TextBlock Text="Type d'eau" />
+                                    <TextBox Text="{Binding SelectedAquarium.WaterType, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1">
+                                    <TextBlock Text="Mise en eau" />
+                                    <DatePicker SelectedDate="{Binding StartedOnDateTime}" Margin="0,4,12,12" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
+                                    <TextBlock Text="Notes" />
+                                    <TextBox Text="{Binding SelectedAquarium.Notes, UpdateSourceTrigger=PropertyChanged}" MinHeight="90" TextWrapping="Wrap" AcceptsReturn="True" />
+                                </StackPanel>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="Parametres">
+                            <DockPanel Margin="0,18,0,0">
+                                <UniformGrid DockPanel.Dock="Top" Columns="4">
+                                    <StackPanel>
+                                        <TextBlock Text="Amoniac mg/L" />
+                                        <TextBox Text="{Binding NewMeasurement.AmmoniaMgPerLiter}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Nitrites mg/L" />
+                                        <TextBox Text="{Binding NewMeasurement.NitritesMgPerLiter}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Nitrates mg/L" />
+                                        <TextBox Text="{Binding NewMeasurement.NitratesMgPerLiter}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="pH" />
+                                        <TextBox Text="{Binding NewMeasurement.Ph}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="GH" />
+                                        <TextBox Text="{Binding NewMeasurement.Gh}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="KH" />
+                                        <TextBox Text="{Binding NewMeasurement.Kh}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Temperature C" />
+                                        <TextBox Text="{Binding NewMeasurement.TemperatureCelsius}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Notes" />
+                                        <TextBox Text="{Binding NewMeasurement.Notes}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <Button DockPanel.Dock="Top" Content="Ajouter la mesure" Click="AddMeasurement_Click" HorizontalAlignment="Left" />
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Date" Binding="{Binding MeasuredAt}" Width="150" />
+                                        <DataGridTextColumn Header="NH3/NH4" Binding="{Binding AmmoniaMgPerLiter}" Width="*" />
+                                        <DataGridTextColumn Header="NO2" Binding="{Binding NitritesMgPerLiter}" Width="*" />
+                                        <DataGridTextColumn Header="NO3" Binding="{Binding NitratesMgPerLiter}" Width="*" />
+                                        <DataGridTextColumn Header="pH" Binding="{Binding Ph}" Width="*" />
+                                        <DataGridTextColumn Header="GH" Binding="{Binding Gh}" Width="*" />
+                                        <DataGridTextColumn Header="KH" Binding="{Binding Kh}" Width="*" />
+                                        <DataGridTextColumn Header="C" Binding="{Binding TemperatureCelsius}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+
+                        <TabItem Header="Plantes">
+                            <DockPanel Margin="0,18,0,0">
+                                <UniformGrid DockPanel.Dock="Top" Columns="4">
+                                    <StackPanel>
+                                        <TextBlock Text="Nom courant" />
+                                        <TextBox Text="{Binding NewPlant.CommonName}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Nom scientifique" />
+                                        <TextBox Text="{Binding NewPlant.ScientificName}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Lumiere" />
+                                        <TextBox Text="{Binding NewPlant.LightNeed}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Notes" />
+                                        <TextBox Text="{Binding NewPlant.Notes}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <Button DockPanel.Dock="Top" Content="Ajouter la plante" Click="AddPlant_Click" HorizontalAlignment="Left" />
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Nom" Binding="{Binding CommonName}" Width="*" />
+                                        <DataGridTextColumn Header="Scientifique" Binding="{Binding ScientificName}" Width="*" />
+                                        <DataGridTextColumn Header="Croissance" Binding="{Binding GrowthSpeed}" Width="*" />
+                                        <DataGridTextColumn Header="Lumiere" Binding="{Binding LightNeed}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+
+                        <TabItem Header="Population">
+                            <DockPanel Margin="0,18,0,0">
+                                <UniformGrid DockPanel.Dock="Top" Columns="5">
+                                    <StackPanel>
+                                        <TextBlock Text="Nom courant" />
+                                        <TextBox Text="{Binding NewPopulation.CommonName}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Espece" />
+                                        <TextBox Text="{Binding NewPopulation.SpeciesName}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Type" />
+                                        <TextBox Text="{Binding NewPopulation.Type}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Quantite" />
+                                        <TextBox Text="{Binding NewPopulation.Quantity}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Notes" />
+                                        <TextBox Text="{Binding NewPopulation.Notes}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <Button DockPanel.Dock="Top" Content="Ajouter la population" Click="AddPopulation_Click" HorizontalAlignment="Left" />
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Population}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Nom" Binding="{Binding CommonName}" Width="*" />
+                                        <DataGridTextColumn Header="Espece" Binding="{Binding SpeciesName}" Width="*" />
+                                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="*" />
+                                        <DataGridTextColumn Header="Quantite" Binding="{Binding Quantity}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>
