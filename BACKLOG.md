@@ -23,8 +23,8 @@
 - [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical.
 - [ ] AQ16 - P2 - Ajouter des fiches especes pour la population avec besoins de pH, GH, temperature, volume minimum, comportement et compatibilites.
 - [ ] AQ17 - P2 - Ajouter des fiches plantes avec besoins lumiere, CO2, fertilisation, croissance et emplacement conseille.
-- [ ] AQ26 - P2 - Creer un referentiel de plantes d'eau douce a partir de sources internet : noms usuels, noms scientifiques et fourchettes de parametres d'eau permettant leur developpement sans probleme.
-- [ ] AQ27 - P2 - Creer un referentiel de poissons d'eau douce a partir de sources internet : noms usuels, noms scientifiques et fourchettes de parametres d'eau permettant leur developpement sans probleme.
+- [ ] AQ26 - P2 - Creer un referentiel de plantes d'eau douce a partir de sources internet : noms usuels, noms scientifiques, fourchettes de parametres d'eau (min/max) permettant leur developpement sans probleme, affichage des min/max par espece et mise en rouge des parametres depassant ces limites selon la derniere mesure de l'aquarium selectionne.
+- [ ] AQ27 - P2 - Creer un referentiel de poissons d'eau douce a partir de sources internet : noms usuels, noms scientifiques, fourchettes de parametres d'eau (min/max) permettant leur developpement sans probleme, affichage des min/max par espece et mise en rouge des parametres depassant ces limites selon la derniere mesure de l'aquarium selectionne.
 - [ ] AQ18 - P2 - Ajouter des graphiques d'evolution des parametres d'eau par aquarium et par periode.
 - [ ] AQ19 - P2 - Mettre en place des migrations SQL versionnees afin de faire evoluer la base sans recreer toutes les tables.
 - [ ] AQ20 - P2 - Ajouter une couche de resilience locale : file d'attente ou cache local lorsque MySQL est indisponible, synchronisation au retour de la connexion.
