@@ -2,6 +2,7 @@
 
 ## Termine
 
+- [x] AQ25 - P1 - Corriger l'impossibilite de modifier ou supprimer une mesure des parametres d'eau depuis l'interface.
 - [x] AQ01 - P1 - Creer la solution Visual Studio `ADAqua` dans le repertoire `AquariumTracker`.
 - [x] AQ02 - P1 - Structurer la solution en trois projets : `ADAqua.App` pour l'application WPF, `ADAqua.Domain` pour le modele metier et `ADAqua.Infrastructure` pour la persistance.
 - [x] AQ03 - P1 - Ajouter le modele initial des aquariums : parametres d'eau, plantes et population.
@@ -17,7 +18,6 @@
 
 ## A faire
 
-- [ ] AQ25 - P1 - Corriger l'impossibilite de modifier ou supprimer une mesure des parametres d'eau depuis l'interface.
 - [ ] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.
 - [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees.
 - [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical.

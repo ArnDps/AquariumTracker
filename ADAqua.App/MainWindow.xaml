@@ -153,8 +153,11 @@
                                         <TextBox Text="{Binding NewMeasurement.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
-                                <Button DockPanel.Dock="Top" Content="Ajouter la mesure" Click="AddMeasurement_Click" HorizontalAlignment="Left" />
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}">
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                                    <Button Content="Ajouter la mesure" Click="AddMeasurement_Click" />
+                                    <Button Content="Supprimer la mesure" Click="DeleteMeasurement_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                                </StackPanel>
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}" SelectedItem="{Binding SelectedMeasurement}" IsReadOnly="False">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Date" Binding="{Binding MeasuredAt}" Width="150" />
                                         <DataGridTextColumn Header="NH3/NH4" Binding="{Binding AmmoniaMgPerLiter}" Width="*" />
@@ -164,6 +167,7 @@
                                         <DataGridTextColumn Header="GH" Binding="{Binding Gh}" Width="*" />
                                         <DataGridTextColumn Header="KH" Binding="{Binding Kh}" Width="*" />
                                         <DataGridTextColumn Header="C" Binding="{Binding TemperatureCelsius}" Width="*" />
+                                        <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="2*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>

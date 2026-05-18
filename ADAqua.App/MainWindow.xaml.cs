@@ -192,6 +192,26 @@ public partial class MainWindow : Window
         viewModel.AddMeasurement();
     }
 
+    private void DeleteMeasurement_Click(object sender, RoutedEventArgs e)
+    {
+        if (viewModel.SelectedMeasurement is null)
+        {
+            viewModel.StatusMessage = "Selectionne une mesure a supprimer.";
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Supprimer la mesure du {viewModel.SelectedMeasurement.MeasuredAt:g} ?",
+            "Confirmation de suppression",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            viewModel.DeleteSelectedMeasurement();
+        }
+    }
+
     private void AddPlant_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddPlant();
@@ -246,6 +266,7 @@ public partial class MainWindow : Window
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
     private Aquarium selectedAquarium;
+    private WaterParameters? selectedMeasurement;
     private AquariumPlant? selectedPlant;
     private PopulationMember? selectedPopulation;
     private string statusMessage = "Pret. MySQL est optionnel au demarrage pour garder l'application utilisable hors ligne.";
@@ -275,11 +296,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             if (SetField(ref selectedAquarium, value))
             {
+                SelectedMeasurement = null;
                 SelectedPlant = null;
                 SelectedPopulation = null;
                 OnPropertyChanged(nameof(StartedOnDateTime));
             }
         }
+    }
+
+    public WaterParameters? SelectedMeasurement
+    {
+        get => selectedMeasurement;
+        set => SetField(ref selectedMeasurement, value);
     }
 
     public AquariumPlant? SelectedPlant
@@ -370,10 +398,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     {
         NewMeasurement.MeasuredAt = DateTime.Now;
         SelectedAquarium.Measurements.Insert(0, NewMeasurement);
+        SelectedMeasurement = NewMeasurement;
         NewMeasurement = new WaterParameters();
         OnPropertyChanged(nameof(NewMeasurement));
         RefreshSelectedAquarium();
         StatusMessage = "Mesure d'eau ajoutee.";
+    }
+
+    public void DeleteSelectedMeasurement()
+    {
+        if (SelectedMeasurement is null)
+        {
+            return;
+        }
+
+        SelectedAquarium.Measurements.Remove(SelectedMeasurement);
+        SelectedMeasurement = null;
+        RefreshSelectedAquarium();
+        StatusMessage = "Mesure d'eau supprimee. Clique sur Sauvegarder pour persister la modification.";
     }
 
     public void AddPlant()
