@@ -4,6 +4,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ADAqua.App;
 
@@ -138,6 +141,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!CommitPendingEdits())
+        {
+            viewModel.StatusMessage = "Sauvegarde impossible: corrige les erreurs de saisie avant d'enregistrer.";
+            return;
+        }
+
         try
         {
             var aquariumId = viewModel.SelectedAquarium.Id;
@@ -149,6 +158,41 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             viewModel.StatusMessage = $"Sauvegarde MySQL impossible: {exception.Message}";
+        }
+    }
+
+    private bool CommitPendingEdits()
+    {
+        Keyboard.ClearFocus();
+
+        foreach (var dataGrid in FindVisualChildren<DataGrid>(this))
+        {
+            dataGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+            if (Validation.GetHasError(dataGrid))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static IEnumerable<TChild> FindVisualChildren<TChild>(DependencyObject root) where TChild : DependencyObject
+    {
+        var childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < childCount; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is TChild typedChild)
+            {
+                yield return typedChild;
+            }
+
+            foreach (var nested in FindVisualChildren<TChild>(child))
+            {
+                yield return nested;
+            }
         }
     }
 
