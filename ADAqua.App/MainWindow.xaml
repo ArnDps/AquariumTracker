@@ -157,60 +157,6 @@
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-            <Setter Property="Padding" Value="8,4" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid>
-                            <Border x:Name="ComboBorder"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="4">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="28" />
-                                    </Grid.ColumnDefinitions>
-                                    <ContentPresenter Margin="8,0,6,0"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Left"
-                                                      Content="{TemplateBinding SelectionBoxItem}"
-                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                                      TextElement.Foreground="{TemplateBinding Foreground}" />
-                                    <Path Grid.Column="1"
-                                          Margin="0,0,8,0"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Center"
-                                          Fill="{TemplateBinding Foreground}"
-                                          Data="M 0 0 L 4 4 L 8 0 Z" />
-                                </Grid>
-                            </Border>
-                            <Popup x:Name="PART_Popup"
-                                   Placement="Bottom"
-                                   IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   PopupAnimation="Slide">
-                                <Border Background="{DynamicResource InputBackgroundBrush}"
-                                        BorderBrush="{DynamicResource CardBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
-                                        Margin="0,2,0,0">
-                                    <ScrollViewer>
-                                        <ItemsPresenter />
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ComboBorder" Property="Opacity" Value="0.6" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
