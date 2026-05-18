@@ -45,16 +45,10 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="ADAqua" FontSize="30" FontWeight="SemiBold" Foreground="White" />
                     <TextBlock Text="Gestion des aquariums, parametres d'eau, plantes et population" Foreground="#D8EFF0" Margin="0,4,0,0" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="Configurer MySQL" Click="ConfigureDatabase_Click" />
-                    <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" />
-                    <Button Content="Sauvegarder" Click="Save_Click" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -244,6 +238,17 @@
                                         <DataGridTextColumn Header="Quantite" Binding="{Binding Quantity}" Width="*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+
+                        <TabItem Header="Outils">
+                            <DockPanel Margin="0,18,0,0">
+                                <TextBlock DockPanel.Dock="Bottom" Text="Actions base de donnees et maintenance." Foreground="#53696E" Margin="0,14,0,0" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Configurer MySQL" Click="ConfigureDatabase_Click" />
+                                    <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" />
+                                    <Button Content="Sauvegarder" Click="Save_Click" />
+                                </StackPanel>
                             </DockPanel>
                         </TabItem>
                     </TabControl>
