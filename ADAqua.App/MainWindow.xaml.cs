@@ -409,6 +409,9 @@ public partial class MainWindow : Window
         Resources["TextOnHeaderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#D7ECEE" : "#D8EFF0"));
         Resources["ButtonPrimaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#1A7F84" : "#156B6F"));
         Resources["ButtonDangerBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#B14A2A" : "#9A3412"));
+        Resources["InputBackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#223033" : "#FFFFFF"));
+        Resources["TabHeaderBackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#233437" : "#E7EFF0"));
+        Resources["TabHeaderSelectedBackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#2D4448" : "#D5E4E6"));
     }
 
     private string T(string key)

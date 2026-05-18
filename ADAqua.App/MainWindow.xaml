@@ -18,6 +18,9 @@
         <SolidColorBrush x:Key="TextOnHeaderBrush" Color="#D8EFF0" />
         <SolidColorBrush x:Key="ButtonPrimaryBrush" Color="#156B6F" />
         <SolidColorBrush x:Key="ButtonDangerBrush" Color="#9A3412" />
+        <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="TabHeaderBackgroundBrush" Color="#E7EFF0" />
+        <SolidColorBrush x:Key="TabHeaderSelectedBackgroundBrush" Color="#D5E4E6" />
         <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, parametres d'eau, plantes et population</sys:String>
         <sys:String x:Key="UiSectionAquariums">Aquariums</sys:String>
         <sys:String x:Key="UiButtonNewAquarium">Nouvel aquarium</sys:String>
@@ -72,6 +75,9 @@
             <Setter Property="Margin" Value="0,4,12,12" />
             <Setter Property="MinHeight" Value="30" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
         </Style>
         <Style x:Key="LongTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
             <Setter Property="MinHeight" Value="90" />
@@ -94,6 +100,39 @@
             <Setter Property="GridLinesVisibility" Value="Horizontal" />
             <Setter Property="HeadersVisibility" Value="Column" />
             <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="RowBackground" Value="{DynamicResource InputBackgroundBrush}" />
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource TabHeaderBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TabHeaderSelectedBackgroundBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
         </Style>
     </Window.Resources>
 
