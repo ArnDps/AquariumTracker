@@ -196,9 +196,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private void NewAquarium_Click(object sender, RoutedEventArgs e)
+    private async void NewAquarium_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddAquarium();
+        await PersistSelectedAquariumAsync("Nouvel aquarium enregistre.");
     }
 
     private async void DeleteAquarium_Click(object sender, RoutedEventArgs e)
@@ -231,12 +232,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddMeasurement_Click(object sender, RoutedEventArgs e)
+    private async void AddMeasurement_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddMeasurement();
+        await PersistSelectedAquariumAsync("Mesure d'eau enregistree.");
     }
 
-    private void DeleteMeasurement_Click(object sender, RoutedEventArgs e)
+    private async void DeleteMeasurement_Click(object sender, RoutedEventArgs e)
     {
         if (viewModel.SelectedMeasurement is null)
         {
@@ -253,15 +255,17 @@ public partial class MainWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             viewModel.DeleteSelectedMeasurement();
+            await PersistSelectedAquariumAsync("Mesure d'eau supprimee.");
         }
     }
 
-    private void AddPlant_Click(object sender, RoutedEventArgs e)
+    private async void AddPlant_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddPlant();
+        await PersistSelectedAquariumAsync("Plante enregistree.");
     }
 
-    private void DeletePlant_Click(object sender, RoutedEventArgs e)
+    private async void DeletePlant_Click(object sender, RoutedEventArgs e)
     {
         if (viewModel.SelectedPlant is null)
         {
@@ -278,15 +282,17 @@ public partial class MainWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             viewModel.DeleteSelectedPlant();
+            await PersistSelectedAquariumAsync("Plante supprimee.");
         }
     }
 
-    private void AddPopulation_Click(object sender, RoutedEventArgs e)
+    private async void AddPopulation_Click(object sender, RoutedEventArgs e)
     {
         viewModel.AddPopulation();
+        await PersistSelectedAquariumAsync("Population enregistree.");
     }
 
-    private void DeletePopulation_Click(object sender, RoutedEventArgs e)
+    private async void DeletePopulation_Click(object sender, RoutedEventArgs e)
     {
         if (viewModel.SelectedPopulation is null)
         {
@@ -303,6 +309,34 @@ public partial class MainWindow : Window
         if (result == MessageBoxResult.Yes)
         {
             viewModel.DeleteSelectedPopulation();
+            await PersistSelectedAquariumAsync("Population supprimee.");
+        }
+    }
+
+    private async Task PersistSelectedAquariumAsync(string successMessage)
+    {
+        if (repository is null)
+        {
+            return;
+        }
+
+        if (!CommitPendingEdits())
+        {
+            viewModel.StatusMessage = "Enregistrement impossible: corrige les erreurs de saisie.";
+            return;
+        }
+
+        try
+        {
+            var aquariumId = viewModel.SelectedAquarium.Id;
+            await repository.InitializeAsync();
+            await repository.SaveAsync(viewModel.SelectedAquarium);
+            await LoadAquariumsAsync(aquariumId);
+            viewModel.StatusMessage = successMessage;
+        }
+        catch (Exception exception)
+        {
+            viewModel.StatusMessage = $"Enregistrement MySQL impossible: {exception.Message}";
         }
     }
 }
