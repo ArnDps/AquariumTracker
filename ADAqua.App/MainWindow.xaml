@@ -245,9 +245,9 @@
                             <DockPanel Margin="0,18,0,0">
                                 <TextBlock DockPanel.Dock="Bottom" Text="Actions base de donnees et maintenance." Foreground="#53696E" Margin="0,14,0,0" />
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="Configurer MySQL" Click="ConfigureDatabase_Click" />
-                                    <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" />
-                                    <Button Content="Sauvegarder" Click="Save_Click" />
+                                    <Button Content="Configurer MySQL" Click="ConfigureDatabase_Click" Height="34" />
+                                    <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" Height="34" />
+                                    <Button Content="Sauvegarder" Click="Save_Click" Height="34" />
                                 </StackPanel>
                             </DockPanel>
                         </TabItem>
