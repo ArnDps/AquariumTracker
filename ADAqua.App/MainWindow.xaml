@@ -1,15 +1,72 @@
 <Window x:Class="ADAqua.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="ADAqua" Height="760" Width="1180" MinHeight="640" MinWidth="980"
         Loaded="Window_Loaded"
-        Background="#F3F7F8">
+        Background="{DynamicResource AppBackgroundBrush}">
     <Window.Resources>
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F3F7F8" />
+        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#C8D8DA" />
+        <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#0E3F46" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#172326" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#53696E" />
+        <SolidColorBrush x:Key="TextOnHeaderBrush" Color="#D8EFF0" />
+        <SolidColorBrush x:Key="ButtonPrimaryBrush" Color="#156B6F" />
+        <SolidColorBrush x:Key="ButtonDangerBrush" Color="#9A3412" />
+        <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, parametres d'eau, plantes et population</sys:String>
+        <sys:String x:Key="UiSectionAquariums">Aquariums</sys:String>
+        <sys:String x:Key="UiButtonNewAquarium">Nouvel aquarium</sys:String>
+        <sys:String x:Key="UiButtonDeleteAquarium">Supprimer aquarium</sys:String>
+        <sys:String x:Key="UiTabSheet">Fiche</sys:String>
+        <sys:String x:Key="UiTabParameters">Parametres</sys:String>
+        <sys:String x:Key="UiTabPlants">Plantes</sys:String>
+        <sys:String x:Key="UiTabPopulation">Population</sys:String>
+        <sys:String x:Key="UiTabSettings">Parametrages</sys:String>
+        <sys:String x:Key="UiLabelName">Nom</sys:String>
+        <sys:String x:Key="UiLabelVolume">Volume (L)</sys:String>
+        <sys:String x:Key="UiLabelWaterType">Type d'eau</sys:String>
+        <sys:String x:Key="UiLabelStartedOn">Mise en eau</sys:String>
+        <sys:String x:Key="UiLabelNotes">Notes</sys:String>
+        <sys:String x:Key="UiLabelAmmonia">Amoniac mg/L</sys:String>
+        <sys:String x:Key="UiLabelNitrites">Nitrites mg/L</sys:String>
+        <sys:String x:Key="UiLabelNitrates">Nitrates mg/L</sys:String>
+        <sys:String x:Key="UiLabelPh">pH</sys:String>
+        <sys:String x:Key="UiLabelGh">GH</sys:String>
+        <sys:String x:Key="UiLabelKh">KH</sys:String>
+        <sys:String x:Key="UiLabelTemperature">Temperature C</sys:String>
+        <sys:String x:Key="UiButtonAddMeasurement">Ajouter la mesure</sys:String>
+        <sys:String x:Key="UiButtonDeleteMeasurement">Supprimer la mesure</sys:String>
+        <sys:String x:Key="UiGridDate">Date</sys:String>
+        <sys:String x:Key="UiPlantCommonName">Nom courant</sys:String>
+        <sys:String x:Key="UiPlantScientificName">Nom scientifique</sys:String>
+        <sys:String x:Key="UiPlantLightNeed">Lumiere</sys:String>
+        <sys:String x:Key="UiButtonAddPlant">Ajouter la plante</sys:String>
+        <sys:String x:Key="UiButtonDeletePlant">Supprimer la plante</sys:String>
+        <sys:String x:Key="UiGridScientific">Scientifique</sys:String>
+        <sys:String x:Key="UiGridGrowth">Croissance</sys:String>
+        <sys:String x:Key="UiPopulationSpecies">Espece</sys:String>
+        <sys:String x:Key="UiPopulationType">Type</sys:String>
+        <sys:String x:Key="UiPopulationQuantity">Quantite</sys:String>
+        <sys:String x:Key="UiButtonAddPopulation">Ajouter la population</sys:String>
+        <sys:String x:Key="UiButtonDeletePopulation">Supprimer la population</sys:String>
+        <sys:String x:Key="UiDbActionsHelp">Actions base de donnees et maintenance.</sys:String>
+        <sys:String x:Key="UiButtonConfigureMySql">Configurer MySQL</sys:String>
+        <sys:String x:Key="UiButtonInitializeMySql">Initialiser MySQL</sys:String>
+        <sys:String x:Key="UiButtonSave">Sauvegarder</sys:String>
+        <sys:String x:Key="UiLabelLanguage">Langue</sys:String>
+        <sys:String x:Key="UiLabelTheme">Theme</sys:String>
+        <sys:String x:Key="UiLangFrench">Francais</sys:String>
+        <sys:String x:Key="UiLangEnglish">Anglais</sys:String>
+        <sys:String x:Key="UiLangGerman">Allemand</sys:String>
+        <sys:String x:Key="UiThemeLight">Clair</sys:String>
+        <sys:String x:Key="UiThemeDark">Sombre</sys:String>
         <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#172326" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="Margin" Value="0,4,12,12" />
@@ -26,9 +83,9 @@
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Padding" Value="14,6" />
             <Setter Property="Margin" Value="0,0,8,0" />
-            <Setter Property="Background" Value="#156B6F" />
+            <Setter Property="Background" Value="{DynamicResource ButtonPrimaryBrush}" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderBrush" Value="#156B6F" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonPrimaryBrush}" />
         </Style>
         <Style TargetType="DataGrid">
             <Setter Property="AutoGenerateColumns" Value="False" />
@@ -41,14 +98,14 @@
     </Window.Resources>
 
     <DockPanel>
-        <Border DockPanel.Dock="Top" Background="#0E3F46" Padding="24,18">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource HeaderBackgroundBrush}" Padding="24,18">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="ADAqua" FontSize="30" FontWeight="SemiBold" Foreground="White" />
-                    <TextBlock Text="Gestion des aquariums, parametres d'eau, plantes et population" Foreground="#D8EFF0" Margin="0,4,0,0" />
+                    <TextBlock Text="{DynamicResource UiAppSubtitle}" Foreground="{DynamicResource TextOnHeaderBrush}" Margin="0,4,0,0" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -60,23 +117,23 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Border Background="White" BorderBrush="#C8D8DA" BorderThickness="1" Padding="18">
+            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="18">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="Aquariums" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                    <TextBlock DockPanel.Dock="Top" Text="{DynamicResource UiSectionAquariums}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
                     <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                        <Button Content="Nouvel aquarium" Click="NewAquarium_Click" Margin="0,0,0,8" />
-                        <Button Content="Supprimer aquarium" Click="DeleteAquarium_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                        <Button Content="{DynamicResource UiButtonNewAquarium}" Click="NewAquarium_Click" Margin="0,0,0,8" />
+                        <Button Content="{DynamicResource UiButtonDeleteAquarium}" Click="DeleteAquarium_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                     </StackPanel>
-                    <ListBox ItemsSource="{Binding Aquariums}" SelectedItem="{Binding SelectedAquarium}" DisplayMemberPath="Name" BorderBrush="#C8D8DA" />
+                    <ListBox ItemsSource="{Binding Aquariums}" SelectedItem="{Binding SelectedAquarium}" DisplayMemberPath="Name" BorderBrush="{DynamicResource CardBorderBrush}" />
                 </DockPanel>
             </Border>
 
-            <Border Grid.Column="2" Background="White" BorderBrush="#C8D8DA" BorderThickness="1" Padding="20">
+            <Border Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Padding="20">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}" Foreground="#53696E" Margin="0,14,0,0" TextWrapping="Wrap" />
+                    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,14,0,0" TextWrapping="Wrap" />
 
                     <TabControl>
-                        <TabItem Header="Fiche">
+                        <TabItem Header="{DynamicResource UiTabSheet}">
                             <Grid Margin="0,18,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -89,71 +146,71 @@
                                 </Grid.RowDefinitions>
 
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Nom" />
+                                    <TextBlock Text="{DynamicResource UiLabelName}" />
                                     <TextBox Text="{Binding SelectedAquarium.Name, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Volume (L)" />
+                                    <TextBlock Text="{DynamicResource UiLabelVolume}" />
                                     <TextBox Text="{Binding SelectedAquarium.VolumeLiters, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="0">
-                                    <TextBlock Text="Type d'eau" />
+                                    <TextBlock Text="{DynamicResource UiLabelWaterType}" />
                                     <TextBox Text="{Binding SelectedAquarium.WaterType, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="1">
-                                    <TextBlock Text="Mise en eau" />
+                                    <TextBlock Text="{DynamicResource UiLabelStartedOn}" />
                                     <DatePicker SelectedDate="{Binding StartedOnDateTime}" Margin="0,4,12,12" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
-                                    <TextBlock Text="Notes" />
+                                    <TextBlock Text="{DynamicResource UiLabelNotes}" />
                                     <TextBox Text="{Binding SelectedAquarium.Notes, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LongTextBoxStyle}" />
                                 </StackPanel>
                             </Grid>
                         </TabItem>
 
-                        <TabItem Header="Parametres">
+                        <TabItem Header="{DynamicResource UiTabParameters}">
                             <DockPanel Margin="0,18,0,0">
                                 <UniformGrid DockPanel.Dock="Top" Columns="4">
                                     <StackPanel>
-                                        <TextBlock Text="Amoniac mg/L" />
+                                        <TextBlock Text="{DynamicResource UiLabelAmmonia}" />
                                         <TextBox Text="{Binding NewMeasurement.AmmoniaMgPerLiter}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Nitrites mg/L" />
+                                        <TextBlock Text="{DynamicResource UiLabelNitrites}" />
                                         <TextBox Text="{Binding NewMeasurement.NitritesMgPerLiter}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Nitrates mg/L" />
+                                        <TextBlock Text="{DynamicResource UiLabelNitrates}" />
                                         <TextBox Text="{Binding NewMeasurement.NitratesMgPerLiter}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="pH" />
+                                        <TextBlock Text="{DynamicResource UiLabelPh}" />
                                         <TextBox Text="{Binding NewMeasurement.Ph}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="GH" />
+                                        <TextBlock Text="{DynamicResource UiLabelGh}" />
                                         <TextBox Text="{Binding NewMeasurement.Gh}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="KH" />
+                                        <TextBlock Text="{DynamicResource UiLabelKh}" />
                                         <TextBox Text="{Binding NewMeasurement.Kh}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Temperature C" />
+                                        <TextBlock Text="{DynamicResource UiLabelTemperature}" />
                                         <TextBox Text="{Binding NewMeasurement.TemperatureCelsius}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Notes" />
+                                        <TextBlock Text="{DynamicResource UiLabelNotes}" />
                                         <TextBox Text="{Binding NewMeasurement.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                                    <Button Content="Ajouter la mesure" Click="AddMeasurement_Click" />
-                                    <Button Content="Supprimer la mesure" Click="DeleteMeasurement_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                                    <Button Content="{DynamicResource UiButtonAddMeasurement}" Click="AddMeasurement_Click" />
+                                    <Button Content="{DynamicResource UiButtonDeleteMeasurement}" Click="DeleteMeasurement_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
                                 <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}" SelectedItem="{Binding SelectedMeasurement}" IsReadOnly="False">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Date" Binding="{Binding MeasuredAt}" Width="150" />
+                                        <DataGridTextColumn Header="{DynamicResource UiGridDate}" Binding="{Binding MeasuredAt}" Width="150" />
                                         <DataGridTextColumn Header="NH3/NH4" Binding="{Binding AmmoniaMgPerLiter}" Width="*" />
                                         <DataGridTextColumn Header="NO2" Binding="{Binding NitritesMgPerLiter}" Width="*" />
                                         <DataGridTextColumn Header="NO3" Binding="{Binding NitratesMgPerLiter}" Width="*" />
@@ -161,93 +218,116 @@
                                         <DataGridTextColumn Header="GH" Binding="{Binding Gh}" Width="*" />
                                         <DataGridTextColumn Header="KH" Binding="{Binding Kh}" Width="*" />
                                         <DataGridTextColumn Header="C" Binding="{Binding TemperatureCelsius}" Width="*" />
-                                        <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="2*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiLabelNotes}" Binding="{Binding Notes}" Width="2*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
                         </TabItem>
 
-                        <TabItem Header="Plantes">
+                        <TabItem Header="{DynamicResource UiTabPlants}">
                             <DockPanel Margin="0,18,0,0">
                                 <UniformGrid DockPanel.Dock="Top" Columns="4">
                                     <StackPanel>
-                                        <TextBlock Text="Nom courant" />
+                                        <TextBlock Text="{DynamicResource UiPlantCommonName}" />
                                         <TextBox Text="{Binding NewPlant.CommonName}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Nom scientifique" />
+                                        <TextBlock Text="{DynamicResource UiPlantScientificName}" />
                                         <TextBox Text="{Binding NewPlant.ScientificName}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Lumiere" />
+                                        <TextBlock Text="{DynamicResource UiPlantLightNeed}" />
                                         <TextBox Text="{Binding NewPlant.LightNeed}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Notes" />
+                                        <TextBlock Text="{DynamicResource UiLabelNotes}" />
                                         <TextBox Text="{Binding NewPlant.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                                    <Button Content="Ajouter la plante" Click="AddPlant_Click" />
-                                    <Button Content="Supprimer la plante" Click="DeletePlant_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                                    <Button Content="{DynamicResource UiButtonAddPlant}" Click="AddPlant_Click" />
+                                    <Button Content="{DynamicResource UiButtonDeletePlant}" Click="DeletePlant_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
                                 <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}" SelectedItem="{Binding SelectedPlant}" IsReadOnly="False">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Nom" Binding="{Binding CommonName}" Width="*" />
-                                        <DataGridTextColumn Header="Scientifique" Binding="{Binding ScientificName}" Width="*" />
-                                        <DataGridTextColumn Header="Croissance" Binding="{Binding GrowthSpeed}" Width="*" />
-                                        <DataGridTextColumn Header="Lumiere" Binding="{Binding LightNeed}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiLabelName}" Binding="{Binding CommonName}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiGridScientific}" Binding="{Binding ScientificName}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiGridGrowth}" Binding="{Binding GrowthSpeed}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiPlantLightNeed}" Binding="{Binding LightNeed}" Width="*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
                         </TabItem>
 
-                        <TabItem Header="Population">
+                        <TabItem Header="{DynamicResource UiTabPopulation}">
                             <DockPanel Margin="0,18,0,0">
                                 <UniformGrid DockPanel.Dock="Top" Columns="5">
                                     <StackPanel>
-                                        <TextBlock Text="Nom courant" />
+                                        <TextBlock Text="{DynamicResource UiPlantCommonName}" />
                                         <TextBox Text="{Binding NewPopulation.CommonName}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Espece" />
+                                        <TextBlock Text="{DynamicResource UiPopulationSpecies}" />
                                         <TextBox Text="{Binding NewPopulation.SpeciesName}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Type" />
+                                        <TextBlock Text="{DynamicResource UiPopulationType}" />
                                         <TextBox Text="{Binding NewPopulation.Type}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Quantite" />
+                                        <TextBlock Text="{DynamicResource UiPopulationQuantity}" />
                                         <TextBox Text="{Binding NewPopulation.Quantity}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="Notes" />
+                                        <TextBlock Text="{DynamicResource UiLabelNotes}" />
                                         <TextBox Text="{Binding NewPopulation.Notes}" Style="{StaticResource LongTextBoxStyle}" />
                                     </StackPanel>
                                 </UniformGrid>
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                                    <Button Content="Ajouter la population" Click="AddPopulation_Click" />
-                                    <Button Content="Supprimer la population" Click="DeletePopulation_Click" Background="#9A3412" BorderBrush="#9A3412" />
+                                    <Button Content="{DynamicResource UiButtonAddPopulation}" Click="AddPopulation_Click" />
+                                    <Button Content="{DynamicResource UiButtonDeletePopulation}" Click="DeletePopulation_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
                                 <DataGrid ItemsSource="{Binding SelectedAquarium.Population}" SelectedItem="{Binding SelectedPopulation}" IsReadOnly="False">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Nom" Binding="{Binding CommonName}" Width="*" />
-                                        <DataGridTextColumn Header="Espece" Binding="{Binding SpeciesName}" Width="*" />
-                                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="*" />
-                                        <DataGridTextColumn Header="Quantite" Binding="{Binding Quantity}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiLabelName}" Binding="{Binding CommonName}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiPopulationSpecies}" Binding="{Binding SpeciesName}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiPopulationType}" Binding="{Binding Type}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiPopulationQuantity}" Binding="{Binding Quantity}" Width="*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
                         </TabItem>
 
-                        <TabItem Header="Outils">
+                        <TabItem Header="{DynamicResource UiTabSettings}">
                             <DockPanel Margin="0,18,0,0">
-                                <TextBlock DockPanel.Dock="Bottom" Text="Actions base de donnees et maintenance." Foreground="#53696E" Margin="0,14,0,0" />
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="Configurer MySQL" Click="ConfigureDatabase_Click" Height="34" />
-                                    <Button Content="Initialiser MySQL" Click="InitializeDatabase_Click" Height="34" />
-                                    <Button Content="Sauvegarder" Click="Save_Click" Height="34" />
+                                <TextBlock DockPanel.Dock="Bottom" Text="{DynamicResource UiDbActionsHelp}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,14,0,0" />
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                        <Button Content="{DynamicResource UiButtonConfigureMySql}" Click="ConfigureDatabase_Click" Height="34" />
+                                        <Button Content="{DynamicResource UiButtonInitializeMySql}" Click="InitializeDatabase_Click" Height="34" />
+                                        <Button Content="{DynamicResource UiButtonSave}" Click="Save_Click" Height="34" />
+                                    </StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="220" />
+                                            <ColumnDefinition Width="220" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{DynamicResource UiLabelLanguage}" />
+                                            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34">
+                                                <ComboBoxItem Content="{DynamicResource UiLangFrench}" Tag="fr" />
+                                                <ComboBoxItem Content="{DynamicResource UiLangEnglish}" Tag="en" />
+                                                <ComboBoxItem Content="{DynamicResource UiLangGerman}" Tag="de" />
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{DynamicResource UiLabelTheme}" />
+                                            <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34">
+                                                <ComboBoxItem Content="{DynamicResource UiThemeLight}" Tag="light" />
+                                                <ComboBoxItem Content="{DynamicResource UiThemeDark}" Tag="dark" />
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
                                 </StackPanel>
                             </DockPanel>
                         </TabItem>
