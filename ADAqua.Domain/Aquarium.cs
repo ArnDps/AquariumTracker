@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace ADAqua.Domain;
 
 public sealed class Aquarium
@@ -8,7 +10,7 @@ public sealed class Aquarium
     public string WaterType { get; set; } = "Eau douce";
     public DateOnly StartedOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     public string Notes { get; set; } = string.Empty;
-    public List<WaterParameters> Measurements { get; } = [];
-    public List<AquariumPlant> Plants { get; } = [];
-    public List<PopulationMember> Population { get; } = [];
+    public ObservableCollection<WaterParameters> Measurements { get; } = [];
+    public ObservableCollection<AquariumPlant> Plants { get; } = [];
+    public ObservableCollection<PopulationMember> Population { get; } = [];
 }
