@@ -27,6 +27,8 @@
 
 ## A faire
 
+- [ ] AQ38 - P2 - Permettre la modification de la date des parametres d'eau.
+- [ ] AQ39 - P2 - Permettre la duplication d'un set de parametres d'eau existant vers une nouvelle date.
 - [ ] AQ36 - P2 - Dater les ajouts de plantes (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee).
 - [ ] AQ37 - P2 - Dater les ajouts de population (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee).
 - [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees.
