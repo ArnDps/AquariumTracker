@@ -2,45 +2,46 @@
 
 ## Termine
 
-- [x] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.
-- [x] AQ35 - P2 - Centrer verticalement le texte du champ `Mise en eau` (DatePicker).
-- [x] AQ34 - P2 - Centrer verticalement le texte des champs `Start date`, `Langue` et `Theme`.
-- [x] AQ33 - P1 - Corriger l'exception XAML au lancement liee au style ComboBox (`Setter.Property` invalide).
-- [x] AQ32 - P1 - Corriger la lisibilite du texte selectionne dans les ComboBox en mode sombre.
-- [x] AQ31 - P1 - Restaurer le comportement cliquable des ComboBox apres personnalisation de style.
-- [x] AQ30 - P1 - Corriger l'affichage des elements selectionnes dans les onglets et les ComboBox selon le theme.
-- [x] AQ29 - P2 - Renommer l'onglet `Outils` en `Parametrages` et ajouter les reglages de langue (FR/EN/DE) et theme (clair/sombre) avec application immediate.
-- [x] AQ28 - P1 - Corriger le rafraichissement des informations apres enregistrement de nouveaux elements (mesures, plantes, population, aquarium) afin d'afficher immediatement les donnees a jour.
-- [x] AQ25 - P1 - Corriger l'impossibilite de modifier ou supprimer une mesure des parametres d'eau depuis l'interface.
-- [x] AQ01 - P1 - Creer la solution Visual Studio `ADAqua` dans le repertoire `AquariumTracker`.
-- [x] AQ02 - P1 - Structurer la solution en trois projets : `ADAqua.App` pour l'application WPF, `ADAqua.Domain` pour le modele metier et `ADAqua.Infrastructure` pour la persistance.
-- [x] AQ03 - P1 - Ajouter le modele initial des aquariums : parametres d'eau, plantes et population.
-- [x] AQ04 - P1 - Ajouter la dependance `MySqlConnector` et un premier depot MySQL transactionnel.
-- [x] AQ05 - P1 - Ajouter un script SQL de creation du schema MySQL `ADAqua`.
-- [x] AQ06 - P2 - Ajouter une premiere interface WPF permettant de creer un aquarium, saisir ses mesures d'eau, ses plantes et sa population.
-- [x] AQ07 - P2 - Permettre le lancement de l'application sans MySQL configure, avec activation MySQL via `ADAQUA_MYSQL_CONNECTION_STRING`.
-- [x] AQ08 - P2 - Corriger la solution pour que `ADAqua.App` soit le projet de demarrage naturel dans Visual Studio.
-- [x] AQ09 - P1 - Stabiliser le socle de lancement Visual Studio : verifier le projet de demarrage, ajouter un profil de lancement clair et documenter la configuration locale MySQL.
-- [x] AQ10 - P1 - Ajouter un vrai ecran de configuration de la connexion MySQL avec test de connexion, sauvegarde locale securisee et messages utilisateur explicites.
-- [x] AQ11 - P1 - Remplacer le stockage en remplacement complet des collections enfants par des operations plus fines : ajout, modification, suppression et conservation de l'historique des mesures.
-- [x] AQ12 - P1 - Ajouter les operations CRUD completes pour les aquariums, les plantes et la population, avec suppression confirmee et gestion des erreurs.
+- [x] AQ01 - P1 - Creer la solution Visual Studio `ADAqua` dans le repertoire `AquariumTracker`. (traite: 2026-05-17)
+- [x] AQ02 - P1 - Structurer la solution en trois projets : `ADAqua.App` pour l'application WPF, `ADAqua.Domain` pour le modele metier et `ADAqua.Infrastructure` pour la persistance. (traite: 2026-05-17)
+- [x] AQ03 - P1 - Ajouter le modele initial des aquariums : parametres d'eau, plantes et population. (traite: 2026-05-17)
+- [x] AQ04 - P1 - Ajouter la dependance `MySqlConnector` et un premier depot MySQL transactionnel. (traite: 2026-05-17)
+- [x] AQ05 - P1 - Ajouter un script SQL de creation du schema MySQL `ADAqua`. (traite: 2026-05-17)
+- [x] AQ09 - P1 - Stabiliser le socle de lancement Visual Studio : verifier le projet de demarrage, ajouter un profil de lancement clair et documenter la configuration locale MySQL. (traite: 2026-05-17)
+- [x] AQ10 - P1 - Ajouter un vrai ecran de configuration de la connexion MySQL avec test de connexion, sauvegarde locale securisee et messages utilisateur explicites. (traite: 2026-05-17)
+- [x] AQ11 - P1 - Remplacer le stockage en remplacement complet des collections enfants par des operations plus fines : ajout, modification, suppression et conservation de l'historique des mesures. (traite: 2026-05-17)
+- [x] AQ12 - P1 - Ajouter les operations CRUD completes pour les aquariums, les plantes et la population, avec suppression confirmee et gestion des erreurs. (traite: 2026-05-17)
+- [x] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles. (traite: 2026-05-19)
+- [x] AQ25 - P1 - Corriger l'impossibilite de modifier ou supprimer une mesure des parametres d'eau depuis l'interface. (traite: 2026-05-18)
+- [x] AQ28 - P1 - Corriger le rafraichissement des informations apres enregistrement de nouveaux elements (mesures, plantes, population, aquarium) afin d'afficher immediatement les donnees a jour. (traite: 2026-05-18)
+- [x] AQ31 - P1 - Restaurer le comportement cliquable des ComboBox apres personnalisation de style. (traite: 2026-05-19)
+- [x] AQ32 - P1 - Corriger la lisibilite du texte selectionne dans les ComboBox en mode sombre. (traite: 2026-05-19)
+- [x] AQ33 - P1 - Corriger l'exception XAML au lancement liee au style ComboBox (`Setter.Property` invalide). (traite: 2026-05-19)
+- [x] AQ30 - P1 - Corriger l'affichage des elements selectionnes dans les onglets et les ComboBox selon le theme. (traite: 2026-05-19)
+- [x] AQ06 - P2 - Ajouter une premiere interface WPF permettant de creer un aquarium, saisir ses mesures d'eau, ses plantes et sa population. (traite: 2026-05-17)
+- [x] AQ07 - P2 - Permettre le lancement de l'application sans MySQL configure, avec activation MySQL via `ADAQUA_MYSQL_CONNECTION_STRING`. (traite: 2026-05-17)
+- [x] AQ08 - P2 - Corriger la solution pour que `ADAqua.App` soit le projet de demarrage naturel dans Visual Studio. (traite: 2026-05-17)
+- [x] AQ29 - P2 - Renommer l'onglet `Outils` en `Parametrages` et ajouter les reglages de langue (FR/EN/DE) et theme (clair/sombre) avec application immediate. (traite: 2026-05-19)
+- [x] AQ34 - P2 - Centrer verticalement le texte des champs `Start date`, `Langue` et `Theme`. (traite: 2026-05-19)
+- [x] AQ35 - P2 - Centrer verticalement le texte du champ `Mise en eau` (DatePicker). (traite: 2026-05-19)
+- [x] AQ40 - P2 - Ajouter les dates et le tri de backlog (priorite puis date) pour les sections `A faire` et `Termine`. (traite: 2026-05-19)
 
 ## A faire
 
-- [ ] AQ38 - P2 - Permettre la modification de la date des parametres d'eau.
-- [ ] AQ39 - P2 - Permettre la duplication d'un set de parametres d'eau existant vers une nouvelle date.
-- [ ] AQ36 - P2 - Dater les ajouts de plantes (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee).
-- [ ] AQ37 - P2 - Dater les ajouts de population (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee).
-- [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees.
-- [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical.
-- [ ] AQ16 - P2 - Ajouter des fiches especes pour la population avec besoins de pH, GH, temperature, volume minimum, comportement et compatibilites.
-- [ ] AQ17 - P2 - Ajouter des fiches plantes avec besoins lumiere, CO2, fertilisation, croissance et emplacement conseille.
-- [ ] AQ26 - P2 - Creer un referentiel de plantes d'eau douce a partir de sources internet : noms usuels, noms scientifiques, fourchettes de parametres d'eau (min/max) permettant leur developpement sans probleme, affichage des min/max par espece et mise en rouge des parametres depassant ces limites selon la derniere mesure de l'aquarium selectionne.
-- [ ] AQ27 - P2 - Creer un referentiel de poissons d'eau douce a partir de sources internet : noms usuels, noms scientifiques, fourchettes de parametres d'eau (min/max) permettant leur developpement sans probleme, affichage des min/max par espece et mise en rouge des parametres depassant ces limites selon la derniere mesure de l'aquarium selectionne.
-- [ ] AQ18 - P2 - Ajouter des graphiques d'evolution des parametres d'eau par aquarium et par periode.
-- [ ] AQ19 - P2 - Mettre en place des migrations SQL versionnees afin de faire evoluer la base sans recreer toutes les tables.
-- [ ] AQ20 - P2 - Ajouter une couche de resilience locale : file d'attente ou cache local lorsque MySQL est indisponible, synchronisation au retour de la connexion.
-- [ ] AQ21 - P2 - Ajouter des tests unitaires sur le domaine : validation des mesures, population, compatibilites et calculs d'alertes.
-- [ ] AQ22 - P3 - Ameliorer l'ergonomie WPF : edition en ligne, filtres, recherche, meilleure densite d'affichage et raccourcis de saisie.
-- [ ] AQ23 - P3 - Ajouter une section `Apparence` : theme clair/sombre, taille de police, densite compacte/confortable et couleur d'accentuation.
-- [ ] AQ24 - P3 - Etudier l'import/export CSV ou Excel des mesures d'eau pour faciliter la reprise de donnees existantes.
+- [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees. (creation: 2026-05-17)
+- [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical. (creation: 2026-05-17)
+- [ ] AQ16 - P2 - Ajouter des fiches especes pour la population avec besoins de pH, GH, temperature, volume minimum, comportement et compatibilites. (creation: 2026-05-17)
+- [ ] AQ17 - P2 - Ajouter des fiches plantes avec besoins lumiere, CO2, fertilisation, croissance et emplacement conseille. (creation: 2026-05-17)
+- [ ] AQ18 - P2 - Ajouter des graphiques d'evolution des parametres d'eau par aquarium et par periode. (creation: 2026-05-17)
+- [ ] AQ19 - P2 - Mettre en place des migrations SQL versionnees afin de faire evoluer la base sans recreer toutes les tables. (creation: 2026-05-17)
+- [ ] AQ20 - P2 - Ajouter une couche de resilience locale : file d'attente ou cache local lorsque MySQL est indisponible, synchronisation au retour de la connexion. (creation: 2026-05-17)
+- [ ] AQ21 - P2 - Ajouter des tests unitaires sur le domaine : validation des mesures, population, compatibilites et calculs d'alertes. (creation: 2026-05-17)
+- [ ] AQ26 - P2 - Creer un referentiel de plantes d'eau douce a partir de sources internet : noms usuels, noms scientifiques, fourchettes de parametres d'eau (min/max) permettant leur developpement sans probleme, affichage des min/max par espece et mise en rouge des parametres depassant ces limites selon la derniere mesure de l'aquarium selectionne. (creation: 2026-05-18)
+- [ ] AQ27 - P2 - Creer un referentiel de poissons d'eau douce a partir de sources internet : noms usuels, noms scientifiques, fourchettes de parametres d'eau (min/max) permettant leur developpement sans probleme, affichage des min/max par espece et mise en rouge des parametres depassant ces limites selon la derniere mesure de l'aquarium selectionne. (creation: 2026-05-18)
+- [ ] AQ36 - P2 - Dater les ajouts de plantes (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee). (creation: 2026-05-19)
+- [ ] AQ37 - P2 - Dater les ajouts de population (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee). (creation: 2026-05-19)
+- [ ] AQ38 - P2 - Permettre la modification de la date des parametres d'eau. (creation: 2026-05-19)
+- [ ] AQ39 - P2 - Permettre la duplication d'un set de parametres d'eau existant vers une nouvelle date. (creation: 2026-05-19)
+- [ ] AQ22 - P3 - Ameliorer l'ergonomie WPF : edition en ligne, filtres, recherche, meilleure densite d'affichage et raccourcis de saisie. (creation: 2026-05-17)
+- [ ] AQ23 - P3 - Ajouter une section `Apparence` : theme clair/sombre, taille de police, densite compacte/confortable et couleur d'accentuation. (creation: 2026-05-17)
+- [ ] AQ24 - P3 - Etudier l'import/export CSV ou Excel des mesures d'eau pour faciliter la reprise de donnees existantes. (creation: 2026-05-17)
