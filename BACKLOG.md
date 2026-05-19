@@ -26,6 +26,8 @@
 
 ## A faire
 
+- [ ] AQ36 - P2 - Dater les ajouts de plantes (date d'ajout visible et persistee).
+- [ ] AQ37 - P2 - Dater les ajouts de population (date d'ajout visible et persistee).
 - [ ] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.
 - [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees.
 - [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical.
