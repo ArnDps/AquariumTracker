@@ -2,6 +2,7 @@
 
 ## Termine
 
+- [x] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.
 - [x] AQ35 - P2 - Centrer verticalement le texte du champ `Mise en eau` (DatePicker).
 - [x] AQ34 - P2 - Centrer verticalement le texte des champs `Start date`, `Langue` et `Theme`.
 - [x] AQ33 - P1 - Corriger l'exception XAML au lancement liee au style ComboBox (`Setter.Property` invalide).
@@ -28,7 +29,6 @@
 
 - [ ] AQ36 - P2 - Dater les ajouts de plantes (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee).
 - [ ] AQ37 - P2 - Dater les ajouts de population (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee).
-- [ ] AQ13 - P1 - Ajouter la validation des mesures d'eau : bornes acceptables pour amoniac, nitrites, nitrates, pH, GH, KH et temperature, avec alertes visuelles.
 - [ ] AQ14 - P1 - Ajouter un tableau de bord de sante par aquarium : dernieres mesures, tendances, alertes critiques et rappel des actions conseillees.
 - [ ] AQ15 - P2 - Ajouter une table d'historique des interventions : changement d'eau, fertilisation, nettoyage filtre, ajout/retrait population, traitement medical.
 - [ ] AQ16 - P2 - Ajouter des fiches especes pour la population avec besoins de pH, GH, temperature, volume minimum, comportement et compatibilites.

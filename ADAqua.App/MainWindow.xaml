@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:local="clr-namespace:ADAqua.App"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
@@ -85,6 +86,23 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="VerticalContentAlignment" Value="Top" />
         </Style>
+        <Style x:Key="WaterParameterInputStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="BorderBrush" Value="#C62828" />
+                    <Setter Property="Background" Value="#FDEAEA" />
+                    <Setter Property="ToolTip"
+                            Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <local:WaterParameterRangeValidationRule x:Key="AmmoniaRangeRule" Min="0" Max="0.5" ParameterName="Amoniac" />
+        <local:WaterParameterRangeValidationRule x:Key="NitritesRangeRule" Min="0" Max="0.2" ParameterName="Nitrites" />
+        <local:WaterParameterRangeValidationRule x:Key="NitratesRangeRule" Min="0" Max="50" ParameterName="Nitrates" />
+        <local:WaterParameterRangeValidationRule x:Key="PhRangeRule" Min="6" Max="8.5" ParameterName="pH" />
+        <local:WaterParameterRangeValidationRule x:Key="GhRangeRule" Min="1" Max="20" ParameterName="GH" />
+        <local:WaterParameterRangeValidationRule x:Key="KhRangeRule" Min="0" Max="15" ParameterName="KH" />
+        <local:WaterParameterRangeValidationRule x:Key="TemperatureRangeRule" Min="18" Max="30" ParameterName="Temperature" />
         <Style TargetType="{x:Type DatePickerTextBox}">
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="8,0" />
@@ -263,31 +281,87 @@
                                 <UniformGrid DockPanel.Dock="Top" Columns="4">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelAmmonia}" />
-                                        <TextBox Text="{Binding NewMeasurement.AmmoniaMgPerLiter}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.AmmoniaMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="AmmoniaRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelNitrites}" />
-                                        <TextBox Text="{Binding NewMeasurement.NitritesMgPerLiter}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.NitritesMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="NitritesRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelNitrates}" />
-                                        <TextBox Text="{Binding NewMeasurement.NitratesMgPerLiter}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.NitratesMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="NitratesRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelPh}" />
-                                        <TextBox Text="{Binding NewMeasurement.Ph}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.Ph" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="PhRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelGh}" />
-                                        <TextBox Text="{Binding NewMeasurement.Gh}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.Gh" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="GhRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelKh}" />
-                                        <TextBox Text="{Binding NewMeasurement.Kh}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.Kh" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="KhRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelTemperature}" />
-                                        <TextBox Text="{Binding NewMeasurement.TemperatureCelsius}" />
+                                        <TextBox Style="{StaticResource WaterParameterInputStyle}">
+                                            <TextBox.Text>
+                                                <Binding Path="NewMeasurement.TemperatureCelsius" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                    <Binding.ValidationRules>
+                                                        <StaticResource ResourceKey="TemperatureRangeRule" />
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelNotes}" />
