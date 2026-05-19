@@ -2,6 +2,13 @@
 
 ## Termine
 
+- [x] AQ35 - P2 - Centrer verticalement le texte du champ `Mise en eau` (DatePicker).
+- [x] AQ34 - P2 - Centrer verticalement le texte des champs `Start date`, `Langue` et `Theme`.
+- [x] AQ33 - P1 - Corriger l'exception XAML au lancement liee au style ComboBox (`Setter.Property` invalide).
+- [x] AQ32 - P1 - Corriger la lisibilite du texte selectionne dans les ComboBox en mode sombre.
+- [x] AQ31 - P1 - Restaurer le comportement cliquable des ComboBox apres personnalisation de style.
+- [x] AQ30 - P1 - Corriger l'affichage des elements selectionnes dans les onglets et les ComboBox selon le theme.
+- [x] AQ29 - P2 - Renommer l'onglet `Outils` en `Parametrages` et ajouter les reglages de langue (FR/EN/DE) et theme (clair/sombre) avec application immediate.
 - [x] AQ28 - P1 - Corriger le rafraichissement des informations apres enregistrement de nouveaux elements (mesures, plantes, population, aquarium) afin d'afficher immediatement les donnees a jour.
 - [x] AQ25 - P1 - Corriger l'impossibilite de modifier ou supprimer une mesure des parametres d'eau depuis l'interface.
 - [x] AQ01 - P1 - Creer la solution Visual Studio `ADAqua` dans le repertoire `AquariumTracker`.
