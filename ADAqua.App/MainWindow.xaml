@@ -242,7 +242,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="1">
                                     <TextBlock Text="{DynamicResource UiLabelStartedOn}" />
-                                    <DatePicker SelectedDate="{Binding StartedOnDateTime}" Margin="0,4,12,12" />
+                                    <DatePicker SelectedDate="{Binding StartedOnDateTime}" Margin="0,4,12,12" MinHeight="34" VerticalContentAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
                                     <TextBlock Text="{DynamicResource UiLabelNotes}" />
@@ -397,7 +397,7 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{DynamicResource UiLabelLanguage}" />
-                                            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34" Background="#FFFFFF" Foreground="#172326">
+                                            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34" Background="#FFFFFF" Foreground="#172326" VerticalContentAlignment="Center" Padding="8,0">
                                                 <ComboBoxItem Content="{DynamicResource UiLangFrench}" Tag="fr" />
                                                 <ComboBoxItem Content="{DynamicResource UiLangEnglish}" Tag="en" />
                                                 <ComboBoxItem Content="{DynamicResource UiLangGerman}" Tag="de" />
@@ -405,7 +405,7 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{DynamicResource UiLabelTheme}" />
-                                            <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34" Background="#FFFFFF" Foreground="#172326">
+                                            <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34" Background="#FFFFFF" Foreground="#172326" VerticalContentAlignment="Center" Padding="8,0">
                                                 <ComboBoxItem Content="{DynamicResource UiThemeLight}" Tag="light" />
                                                 <ComboBoxItem Content="{DynamicResource UiThemeDark}" Tag="dark" />
                                             </ComboBox>
