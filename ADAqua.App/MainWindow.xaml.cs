@@ -292,6 +292,17 @@ public partial class MainWindow : Window
         await PersistSelectedAquariumAsync(T("StatusMeasurementSaved"));
     }
 
+    private async void DuplicateMeasurement_Click(object sender, RoutedEventArgs e)
+    {
+        if (!viewModel.DuplicateSelectedMeasurement())
+        {
+            viewModel.StatusMessage = T("StatusSelectMeasurementDuplicate");
+            return;
+        }
+
+        await PersistSelectedAquariumAsync(T("StatusMeasurementDuplicated"));
+    }
+
     private async void DeleteMeasurement_Click(object sender, RoutedEventArgs e)
     {
         if (viewModel.SelectedMeasurement is null)
@@ -367,6 +378,22 @@ public partial class MainWindow : Window
         }
     }
 
+    private void MeasurementGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+    {
+        if (e.EditAction == DataGridEditAction.Commit)
+        {
+            QueueInlineGridPersist(T("StatusMeasurementSaved"), "Measurement inline edit persist failed.", viewModel.RefreshMeasurementsAfterEdit);
+        }
+    }
+
+    private void MeasurementGrid_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e)
+    {
+        if (e.EditAction == DataGridEditAction.Commit)
+        {
+            QueueInlineGridPersist(T("StatusMeasurementSaved"), "Measurement row edit persist failed.", viewModel.RefreshMeasurementsAfterEdit);
+        }
+    }
+
     private void PlantGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
         if (e.EditAction == DataGridEditAction.Commit)
@@ -399,7 +426,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void QueueInlineGridPersist(string successMessage, string logContext)
+    private void QueueInlineGridPersist(string successMessage, string logContext, Action? beforePersist = null)
     {
         if (isInlineGridPersistQueued)
         {
@@ -411,6 +438,7 @@ public partial class MainWindow : Window
             new Action(async () =>
             {
                 isInlineGridPersistQueued = false;
+                beforePersist?.Invoke();
                 await PersistInlineGridEditAsync(successMessage, logContext);
             }),
             DispatcherPriority.Background);
@@ -1686,6 +1714,7 @@ public partial class MainWindow : Window
             ["UiLabelKh"] = "KH",
             ["UiLabelTemperature"] = "Temperature C",
             ["UiButtonAddMeasurement"] = "Ajouter la mesure",
+            ["UiButtonDuplicateMeasurement"] = "Dupliquer la mesure",
             ["UiButtonDeleteMeasurement"] = "Supprimer la mesure",
             ["UiGridDate"] = "Date",
             ["UiPlantCommonName"] = "Nom courant",
@@ -1755,7 +1784,9 @@ public partial class MainWindow : Window
             ["StatusAquariumDeleted"] = "Aquarium supprime.",
             ["StatusAquariumDeleteFailed"] = "Suppression de l'aquarium impossible:",
             ["StatusSelectMeasurementDelete"] = "Selectionne une mesure a supprimer.",
+            ["StatusSelectMeasurementDuplicate"] = "Selectionne une mesure a dupliquer.",
             ["StatusMeasurementSaved"] = "Mesure d'eau enregistree.",
+            ["StatusMeasurementDuplicated"] = "Mesure d'eau dupliquee et enregistree.",
             ["StatusMeasurementDeleted"] = "Mesure d'eau supprimee.",
             ["StatusSelectPlantDelete"] = "Selectionne une plante a supprimer.",
             ["StatusPlantSaved"] = "Plante enregistree.",
@@ -1822,6 +1853,7 @@ public partial class MainWindow : Window
             ["UiLightMedium"] = "Medium",
             ["UiLightHigh"] = "High",
             ["UiButtonAddMeasurement"] = "Add measurement",
+            ["UiButtonDuplicateMeasurement"] = "Duplicate measurement",
             ["UiButtonDeleteMeasurement"] = "Delete measurement",
             ["UiButtonAddPlant"] = "Add plant",
             ["UiButtonDeletePlant"] = "Delete plant",
@@ -1879,7 +1911,9 @@ public partial class MainWindow : Window
             ["StatusAquariumDeleted"] = "Aquarium deleted.",
             ["StatusAquariumDeleteFailed"] = "Aquarium deletion failed:",
             ["StatusSelectMeasurementDelete"] = "Select a measurement to delete.",
+            ["StatusSelectMeasurementDuplicate"] = "Select a measurement to duplicate.",
             ["StatusMeasurementSaved"] = "Measurement saved.",
+            ["StatusMeasurementDuplicated"] = "Measurement duplicated and saved.",
             ["StatusMeasurementDeleted"] = "Measurement deleted.",
             ["StatusSelectPlantDelete"] = "Select a plant to delete.",
             ["StatusPlantSaved"] = "Plant saved.",
@@ -1948,6 +1982,7 @@ public partial class MainWindow : Window
             ["UiGridScientific"] = "Wissenschaftlich",
             ["UiGridGrowth"] = "Wachstum",
             ["UiButtonAddMeasurement"] = "Messung hinzufuegen",
+            ["UiButtonDuplicateMeasurement"] = "Messung duplizieren",
             ["UiButtonDeleteMeasurement"] = "Messung loeschen",
             ["UiButtonAddPlant"] = "Pflanze hinzufuegen",
             ["UiButtonDeletePlant"] = "Pflanze loeschen",
@@ -2002,7 +2037,9 @@ public partial class MainWindow : Window
             ["StatusAquariumDeleted"] = "Aquarium geloescht.",
             ["StatusAquariumDeleteFailed"] = "Loeschen des Aquariums fehlgeschlagen:",
             ["StatusSelectMeasurementDelete"] = "Waehle eine Messung zum Loeschen aus.",
+            ["StatusSelectMeasurementDuplicate"] = "Waehle eine Messung zum Duplizieren aus.",
             ["StatusMeasurementSaved"] = "Messung gespeichert.",
+            ["StatusMeasurementDuplicated"] = "Messung dupliziert und gespeichert.",
             ["StatusMeasurementDeleted"] = "Messung geloescht.",
             ["StatusSelectPlantDelete"] = "Waehle eine Pflanze zum Loeschen aus.",
             ["StatusPlantSaved"] = "Pflanze gespeichert.",
@@ -2596,6 +2633,44 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SelectedMeasurement = NewMeasurement;
         NewMeasurement = new WaterParameters();
         OnPropertyChanged(nameof(NewMeasurement));
+        RefreshSelectedAquarium();
+        RebuildHealthDashboard();
+    }
+
+    public bool DuplicateSelectedMeasurement()
+    {
+        if (SelectedMeasurement is null)
+        {
+            return false;
+        }
+
+        var source = SelectedMeasurement;
+        var duplicate = new WaterParameters
+        {
+            MeasuredAt = DateTime.Now,
+            AmmoniaMgPerLiter = source.AmmoniaMgPerLiter,
+            NitritesMgPerLiter = source.NitritesMgPerLiter,
+            NitratesMgPerLiter = source.NitratesMgPerLiter,
+            Ph = source.Ph,
+            Gh = source.Gh,
+            Kh = source.Kh,
+            TemperatureCelsius = source.TemperatureCelsius,
+            Notes = source.Notes
+        };
+
+        SelectedAquarium.Measurements.Insert(0, duplicate);
+        SortMeasurementsDescending(SelectedAquarium);
+        SelectedMeasurement = duplicate;
+        RefreshSelectedAquarium();
+        RebuildHealthDashboard();
+        return true;
+    }
+
+    public void RefreshMeasurementsAfterEdit()
+    {
+        var selected = SelectedMeasurement;
+        SortMeasurementsDescending(SelectedAquarium);
+        SelectedMeasurement = selected;
         RefreshSelectedAquarium();
         RebuildHealthDashboard();
     }

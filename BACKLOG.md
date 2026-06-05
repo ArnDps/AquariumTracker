@@ -64,10 +64,11 @@
 - [x] AQ69 - P1 - Ajouter un acces au journal applicatif depuis l'application (consultation, rafraichissement, ouverture du fichier log) pour analyser les problemes d'execution et de connectivite. (traite: 2026-06-03)
 - [x] AQ74 - P2 - Harmoniser la largeur des boutons Aquarium : rendre `Supprimer aquarium` aussi long que `Nouvel aquarium`, centrer le texte dans les deux boutons et aligner leurs bords gauche/droit. (traite: 2026-06-05)
 - [x] AQ75 - P2 - Presenter les mesures des parametres d'eau en ordre antechronologique dans l'onglet Parametres et afficher les dates selon la langue active de l'application. (traite: 2026-06-05)
+- [x] AQ38 - P2 - Permettre la modification de la date des parametres d'eau. (traite: 2026-06-06)
+- [x] AQ39 - P2 - Permettre la duplication d'un set de parametres d'eau existant vers une nouvelle date. (traite: 2026-06-06)
+- [x] AQ76 - P2 - Creer une rubrique `Demandes annulées` dans la backlog et y deplacer les demandes AQ19, AQ21, AQ26 et AQ27 avec leur date d'annulation. (traite: 2026-06-06)
 
 ## A valider
-
-- [ ] AQ76 - P2 - Creer une rubrique `Demandes annulées` dans la backlog et y deplacer les demandes AQ19, AQ21, AQ26 et AQ27 avec leur date d'annulation. (creation: 2026-06-05, a valider: 2026-06-05)
 
 ## A faire
 
@@ -75,8 +76,6 @@
 - [ ] AQ20 - P2 - Ajouter une couche de resilience locale : file d'attente ou cache local lorsque MySQL est indisponible, synchronisation au retour de la connexion. (creation: 2026-05-17)
 - [ ] AQ36 - P2 - Dater les ajouts de plantes (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee). (creation: 2026-05-19)
 - [ ] AQ37 - P2 - Dater les ajouts de population (date d'ajout visible, modifiable par l'utilisateur, initialisee a la date du jour par defaut et persistee). (creation: 2026-05-19)
-- [ ] AQ38 - P2 - Permettre la modification de la date des parametres d'eau. (creation: 2026-05-19)
-- [ ] AQ39 - P2 - Permettre la duplication d'un set de parametres d'eau existant vers une nouvelle date. (creation: 2026-05-19)
 - [ ] AQ22 - P3 - Ameliorer l'ergonomie WPF : edition en ligne, filtres, recherche, meilleure densite d'affichage et raccourcis de saisie. (creation: 2026-05-17)
 - [ ] AQ23 - P3 - Ajouter une section `Apparence` : theme clair/sombre, taille de police, densite compacte/confortable et couleur d'accentuation. (creation: 2026-05-17)
 - [ ] AQ24 - P3 - Etudier l'import/export CSV ou Excel des mesures d'eau pour faciliter la reprise de donnees existantes. (creation: 2026-05-17)

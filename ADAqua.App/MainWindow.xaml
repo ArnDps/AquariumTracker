@@ -49,6 +49,7 @@
         <sys:String x:Key="UiLabelKh">KH</sys:String>
         <sys:String x:Key="UiLabelTemperature">Temperature C</sys:String>
         <sys:String x:Key="UiButtonAddMeasurement">Ajouter la mesure</sys:String>
+        <sys:String x:Key="UiButtonDuplicateMeasurement">Dupliquer la mesure</sys:String>
         <sys:String x:Key="UiButtonDeleteMeasurement">Supprimer la mesure</sys:String>
         <sys:String x:Key="UiGridDate">Date</sys:String>
         <sys:String x:Key="UiPlantCommonName">Nom courant</sys:String>
@@ -575,11 +576,29 @@
                                 </UniformGrid>
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
                                     <Button Content="{DynamicResource UiButtonAddMeasurement}" Click="AddMeasurement_Click" />
+                                    <Button Content="{DynamicResource UiButtonDuplicateMeasurement}" Click="DuplicateMeasurement_Click" />
                                     <Button Content="{DynamicResource UiButtonDeleteMeasurement}" Click="DeleteMeasurement_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}" SelectedItem="{Binding SelectedMeasurement}" IsReadOnly="False">
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}"
+                                          SelectedItem="{Binding SelectedMeasurement}"
+                                          IsReadOnly="False"
+                                          CellEditEnding="MeasurementGrid_CellEditEnding"
+                                          RowEditEnding="MeasurementGrid_RowEditEnding">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="{DynamicResource UiGridDate}" Binding="{Binding MeasuredAt, StringFormat={}{0:g}}" Width="150" />
+                                        <DataGridTemplateColumn Header="{DynamicResource UiGridDate}" Width="170">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding MeasuredAt, StringFormat={}{0:g}}" VerticalAlignment="Center" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <DatePicker SelectedDate="{Binding MeasuredOnDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                MinHeight="32"
+                                                                VerticalContentAlignment="Center" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="NH3/NH4" Binding="{Binding AmmoniaMgPerLiter, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
                                         <DataGridTextColumn Header="NO2" Binding="{Binding NitritesMgPerLiter, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
                                         <DataGridTextColumn Header="NO3" Binding="{Binding NitratesMgPerLiter, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
