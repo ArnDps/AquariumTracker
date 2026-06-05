@@ -17,7 +17,7 @@ public sealed class WaterParameterRangeValidationRule : ValidationRule
             return ValidationResult.ValidResult;
         }
 
-        if (!decimal.TryParse(text, NumberStyles.Number, cultureInfo, out var parsedValue))
+        if (!TryParseFlexibleDecimal(text, cultureInfo, out var parsedValue))
         {
             return new ValidationResult(false, $"{ParameterName}: valeur numerique invalide.");
         }
@@ -28,5 +28,26 @@ public sealed class WaterParameterRangeValidationRule : ValidationRule
         }
 
         return ValidationResult.ValidResult;
+    }
+
+    private static bool TryParseFlexibleDecimal(string text, CultureInfo cultureInfo, out decimal parsedValue)
+    {
+        if (decimal.TryParse(text, NumberStyles.Number, cultureInfo, out parsedValue))
+        {
+            return true;
+        }
+
+        var normalized = text.Replace(',', '.');
+        if (cultureInfo.NumberFormat.NumberDecimalSeparator == ",")
+        {
+            normalized = normalized.Replace(".", ",");
+        }
+
+        if (decimal.TryParse(normalized, NumberStyles.Number, cultureInfo, out parsedValue))
+        {
+            return true;
+        }
+
+        return decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out parsedValue);
     }
 }

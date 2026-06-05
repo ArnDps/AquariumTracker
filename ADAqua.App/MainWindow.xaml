@@ -3,11 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:ADAqua.App"
+        xmlns:domain="clr-namespace:ADAqua.Domain;assembly=ADAqua.Domain"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="ADAqua" Height="760" Width="1180" MinHeight="640" MinWidth="980"
+        Title="ADAqua" Height="980" Width="1440" MinHeight="820" MinWidth="1400"
         Loaded="Window_Loaded"
+        Closing="Window_Closing"
         Background="{DynamicResource AppBackgroundBrush}">
     <Window.Resources>
         <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F3F7F8" />
@@ -20,6 +22,7 @@
         <SolidColorBrush x:Key="ButtonPrimaryBrush" Color="#156B6F" />
         <SolidColorBrush x:Key="ButtonDangerBrush" Color="#9A3412" />
         <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="DatePickerTextBrush" Color="#172326" />
         <SolidColorBrush x:Key="TabHeaderBackgroundBrush" Color="#E7EFF0" />
         <SolidColorBrush x:Key="TabHeaderSelectedBackgroundBrush" Color="#D5E4E6" />
         <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, parametres d'eau, plantes et population</sys:String>
@@ -28,7 +31,9 @@
         <sys:String x:Key="UiButtonDeleteAquarium">Supprimer aquarium</sys:String>
         <sys:String x:Key="UiTabSheet">Fiche</sys:String>
         <sys:String x:Key="UiTabParameters">Parametres</sys:String>
+        <sys:String x:Key="UiTabHealth">Santé</sys:String>
         <sys:String x:Key="UiTabPlants">Plantes</sys:String>
+        <sys:String x:Key="UiTabPlantReference">Referentiel plantes</sys:String>
         <sys:String x:Key="UiTabPopulation">Population</sys:String>
         <sys:String x:Key="UiTabSettings">Parametrages</sys:String>
         <sys:String x:Key="UiLabelName">Nom</sys:String>
@@ -47,13 +52,54 @@
         <sys:String x:Key="UiButtonDeleteMeasurement">Supprimer la mesure</sys:String>
         <sys:String x:Key="UiGridDate">Date</sys:String>
         <sys:String x:Key="UiPlantCommonName">Nom courant</sys:String>
+        <sys:String x:Key="UiPlantReferenceChoice">Referentiel</sys:String>
         <sys:String x:Key="UiPlantScientificName">Nom scientifique</sys:String>
+        <sys:String x:Key="UiPlantGrowth">Croissance</sys:String>
+        <sys:String x:Key="UiGrowthSlow">Lente</sys:String>
+        <sys:String x:Key="UiGrowthMedium">Moyenne</sys:String>
+        <sys:String x:Key="UiGrowthFast">Rapide</sys:String>
         <sys:String x:Key="UiPlantLightNeed">Lumiere</sys:String>
+        <sys:String x:Key="UiPlantRefEnvironment">Type</sys:String>
+        <sys:String x:Key="UiPlantRefCommonName">Nom courant</sys:String>
+        <sys:String x:Key="UiPlantRefScientificName">Nom scientifique</sys:String>
+        <sys:String x:Key="UiPlantRefPhMin">pH min</sys:String>
+        <sys:String x:Key="UiPlantRefPhMax">pH max</sys:String>
+        <sys:String x:Key="UiPlantRefGhMin">GH min</sys:String>
+        <sys:String x:Key="UiPlantRefGhMax">GH max</sys:String>
+        <sys:String x:Key="UiPlantRefKhMin">KH min</sys:String>
+        <sys:String x:Key="UiPlantRefKhMax">KH max</sys:String>
+        <sys:String x:Key="UiPlantRefTempMin">Temp min C</sys:String>
+        <sys:String x:Key="UiPlantRefTempMax">Temp max C</sys:String>
+        <sys:String x:Key="UiPlantRefNh3Min">Amoniac min</sys:String>
+        <sys:String x:Key="UiPlantRefNh3Max">Amoniac max</sys:String>
+        <sys:String x:Key="UiPlantRefNo2Min">Nitrites min</sys:String>
+        <sys:String x:Key="UiPlantRefNo2Max">Nitrites max</sys:String>
+        <sys:String x:Key="UiPlantRefNo3Min">Nitrates min</sys:String>
+        <sys:String x:Key="UiPlantRefNo3Max">Nitrates max</sys:String>
+        <sys:String x:Key="UiPlantRefVolumeMin">Volume min L</sys:String>
+        <sys:String x:Key="UiPlantRefLight">Lumiere</sys:String>
+        <sys:String x:Key="UiPlantRefCo2">CO2</sys:String>
+        <sys:String x:Key="UiPlantRefFertilization">Fertilisation</sys:String>
+        <sys:String x:Key="UiPlantRefGrowth">Croissance</sys:String>
+        <sys:String x:Key="UiPlantRefPlacement">Emplacement</sys:String>
+        <sys:String x:Key="UiPlantRefBehavior">Comportement</sys:String>
+        <sys:String x:Key="UiPlantRefCompatibility">Compatibilites</sys:String>
+        <sys:String x:Key="UiPlantRefSourceUrl">Source URL</sys:String>
+        <sys:String x:Key="UiPlantRefNoData">Aucune plante de reference pour ce type d'aquarium.</sys:String>
+        <sys:String x:Key="UiPlantRefSearchMore">Recherches complementaires</sys:String>
+        <sys:String x:Key="UiPlantRefCheckCompatibility">Verifier compatibilite</sys:String>
+        <sys:String x:Key="UiPlantRefApplyFilters">Appliquer filtres</sys:String>
+        <sys:String x:Key="UiPlantRefResetFilters">Reinitialiser filtres</sys:String>
+        <sys:String x:Key="UiPlantRefDelete">Supprimer reference</sys:String>
+        <sys:String x:Key="UiLightLow">Faible</sys:String>
+        <sys:String x:Key="UiLightMedium">Moyenne</sys:String>
+        <sys:String x:Key="UiLightHigh">Forte</sys:String>
         <sys:String x:Key="UiButtonAddPlant">Ajouter la plante</sys:String>
         <sys:String x:Key="UiButtonDeletePlant">Supprimer la plante</sys:String>
         <sys:String x:Key="UiGridScientific">Scientifique</sys:String>
         <sys:String x:Key="UiGridGrowth">Croissance</sys:String>
         <sys:String x:Key="UiPopulationSpecies">Espece</sys:String>
+        <sys:String x:Key="UiAnimalReferenceChoice">Referentiel faune</sys:String>
         <sys:String x:Key="UiPopulationType">Type</sys:String>
         <sys:String x:Key="UiPopulationQuantity">Quantite</sys:String>
         <sys:String x:Key="UiButtonAddPopulation">Ajouter la population</sys:String>
@@ -64,6 +110,19 @@
         <sys:String x:Key="UiButtonSave">Sauvegarder</sys:String>
         <sys:String x:Key="UiLabelLanguage">Langue</sys:String>
         <sys:String x:Key="UiLabelTheme">Theme</sys:String>
+        <sys:String x:Key="UiHealthLastMeasure">Derniere mesure</sys:String>
+        <sys:String x:Key="UiHealthGlobalStatus">Statut global</sys:String>
+        <sys:String x:Key="UiHealthTrends">Tendances</sys:String>
+        <sys:String x:Key="UiHealthCharts">Graphiques d'evolution</sys:String>
+        <sys:String x:Key="UiHealthPeriod">Periode</sys:String>
+        <sys:String x:Key="UiHealthPeriod7">7 jours</sys:String>
+        <sys:String x:Key="UiHealthPeriod30">30 jours</sys:String>
+        <sys:String x:Key="UiHealthPeriod90">90 jours</sys:String>
+        <sys:String x:Key="UiHealthPeriodAll">Tout l'historique</sys:String>
+        <sys:String x:Key="UiHealthParameters">Parametres a afficher</sys:String>
+        <sys:String x:Key="UiHealthNoChartData">Pas assez de mesures pour tracer un graphe.</sys:String>
+        <sys:String x:Key="UiHealthActions">Actions conseillees</sys:String>
+        <sys:String x:Key="UiHealthNoData">Aucune mesure disponible pour cet aquarium.</sys:String>
         <sys:String x:Key="UiLangFrench">Francais</sys:String>
         <sys:String x:Key="UiLangEnglish">Anglais</sys:String>
         <sys:String x:Key="UiLangGerman">Allemand</sys:String>
@@ -103,11 +162,17 @@
         <local:WaterParameterRangeValidationRule x:Key="GhRangeRule" Min="1" Max="20" ParameterName="GH" />
         <local:WaterParameterRangeValidationRule x:Key="KhRangeRule" Min="0" Max="15" ParameterName="KH" />
         <local:WaterParameterRangeValidationRule x:Key="TemperatureRangeRule" Min="18" Max="30" ParameterName="Temperature" />
+        <local:FlexibleDecimalConverter x:Key="FlexibleDecimalConverter" />
         <Style TargetType="{x:Type DatePickerTextBox}">
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="8,0" />
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource DatePickerTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        </Style>
+        <Style TargetType="DatePicker">
+            <Setter Property="Foreground" Value="{DynamicResource DatePickerTextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
         </Style>
         <Style TargetType="Button">
@@ -129,6 +194,16 @@
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
             <Setter Property="RowBackground" Value="{DynamicResource InputBackgroundBrush}" />
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource TabHeaderBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style TargetType="ListBox">
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
@@ -182,12 +257,132 @@
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-            <Style.Resources>
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#4C9EA4" />
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#172326" />
-                <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#223033" />
-                <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#E3F0F1" />
-            </Style.Resources>
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="MaxDropDownHeight" Value="340" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="MainBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="28" />
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Grid.Column="0"
+                                                      Margin="{TemplateBinding Padding}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                      ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}" />
+                                    <ToggleButton Grid.Column="1"
+                                                  Focusable="False"
+                                                  Background="Transparent"
+                                                  BorderBrush="Transparent"
+                                                  BorderThickness="0"
+                                                  IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                        <Path Margin="0,0,10,0"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"
+                                              Fill="{TemplateBinding Foreground}"
+                                              Data="M 0 0 L 4 4 L 8 0 Z" />
+                                    </ToggleButton>
+                                </Grid>
+                            </Border>
+                            <Popup Name="PART_Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Border Background="{DynamicResource InputBackgroundBrush}"
+                                        BorderBrush="{DynamicResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        MinWidth="{TemplateBinding ActualWidth}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <ScrollViewer CanContentScroll="True"
+                                                  VerticalScrollBarVisibility="Auto">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="MainBorder" Property="Opacity" Value="0.7" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource TabHeaderSelectedBackgroundBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PlantRefPhCellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPhIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PlantRefGhCellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsGhIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PlantRefKhCellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsKhIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PlantRefTempCellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTemperatureIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PlantRefNh3CellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsAmmoniaIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PlantRefNo2CellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsNitritesIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PlantRefNo3CellStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsNitratesIncompatible}" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
@@ -229,8 +424,18 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="{DynamicResource UiSectionAquariums}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
                     <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                        <Button Content="{DynamicResource UiButtonNewAquarium}" Click="NewAquarium_Click" Margin="0,0,0,8" />
-                        <Button Content="{DynamicResource UiButtonDeleteAquarium}" Click="DeleteAquarium_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
+                        <Button Content="{DynamicResource UiButtonNewAquarium}"
+                                Click="NewAquarium_Click"
+                                Margin="0,0,0,8"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center" />
+                        <Button Content="{DynamicResource UiButtonDeleteAquarium}"
+                                Click="DeleteAquarium_Click"
+                                Margin="0"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Background="{DynamicResource ButtonDangerBrush}"
+                                BorderBrush="{DynamicResource ButtonDangerBrush}" />
                     </StackPanel>
                     <ListBox ItemsSource="{Binding Aquariums}" SelectedItem="{Binding SelectedAquarium}" DisplayMemberPath="Name" BorderBrush="{DynamicResource CardBorderBrush}" />
                 </DockPanel>
@@ -283,7 +488,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelAmmonia}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.AmmoniaMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.AmmoniaMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="AmmoniaRangeRule" />
                                                     </Binding.ValidationRules>
@@ -295,7 +500,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelNitrites}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.NitritesMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.NitritesMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="NitritesRangeRule" />
                                                     </Binding.ValidationRules>
@@ -307,7 +512,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelNitrates}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.NitratesMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.NitratesMgPerLiter" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="NitratesRangeRule" />
                                                     </Binding.ValidationRules>
@@ -319,7 +524,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelPh}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.Ph" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.Ph" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="PhRangeRule" />
                                                     </Binding.ValidationRules>
@@ -331,7 +536,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelGh}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.Gh" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.Gh" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="GhRangeRule" />
                                                     </Binding.ValidationRules>
@@ -343,7 +548,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelKh}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.Kh" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.Kh" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="KhRangeRule" />
                                                     </Binding.ValidationRules>
@@ -355,7 +560,7 @@
                                         <TextBlock Text="{DynamicResource UiLabelTemperature}" />
                                         <TextBox Style="{StaticResource WaterParameterInputStyle}">
                                             <TextBox.Text>
-                                                <Binding Path="NewMeasurement.TemperatureCelsius" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True">
+                                                <Binding Path="NewMeasurement.TemperatureCelsius" UpdateSourceTrigger="PropertyChanged" ValidatesOnNotifyDataErrors="True" NotifyOnValidationError="True" Converter="{StaticResource FlexibleDecimalConverter}">
                                                     <Binding.ValidationRules>
                                                         <StaticResource ResourceKey="TemperatureRangeRule" />
                                                     </Binding.ValidationRules>
@@ -374,23 +579,213 @@
                                 </StackPanel>
                                 <DataGrid ItemsSource="{Binding SelectedAquarium.Measurements}" SelectedItem="{Binding SelectedMeasurement}" IsReadOnly="False">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="{DynamicResource UiGridDate}" Binding="{Binding MeasuredAt}" Width="150" />
-                                        <DataGridTextColumn Header="NH3/NH4" Binding="{Binding AmmoniaMgPerLiter}" Width="*" />
-                                        <DataGridTextColumn Header="NO2" Binding="{Binding NitritesMgPerLiter}" Width="*" />
-                                        <DataGridTextColumn Header="NO3" Binding="{Binding NitratesMgPerLiter}" Width="*" />
-                                        <DataGridTextColumn Header="pH" Binding="{Binding Ph}" Width="*" />
-                                        <DataGridTextColumn Header="GH" Binding="{Binding Gh}" Width="*" />
-                                        <DataGridTextColumn Header="KH" Binding="{Binding Kh}" Width="*" />
-                                        <DataGridTextColumn Header="C" Binding="{Binding TemperatureCelsius}" Width="*" />
+                                        <DataGridTextColumn Header="{DynamicResource UiGridDate}" Binding="{Binding MeasuredAt, StringFormat={}{0:g}}" Width="150" />
+                                        <DataGridTextColumn Header="NH3/NH4" Binding="{Binding AmmoniaMgPerLiter, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
+                                        <DataGridTextColumn Header="NO2" Binding="{Binding NitritesMgPerLiter, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
+                                        <DataGridTextColumn Header="NO3" Binding="{Binding NitratesMgPerLiter, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
+                                        <DataGridTextColumn Header="pH" Binding="{Binding Ph, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
+                                        <DataGridTextColumn Header="GH" Binding="{Binding Gh, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
+                                        <DataGridTextColumn Header="KH" Binding="{Binding Kh, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
+                                        <DataGridTextColumn Header="C" Binding="{Binding TemperatureCelsius, Converter={StaticResource FlexibleDecimalConverter}}" Width="*" />
                                         <DataGridTextColumn Header="{DynamicResource UiLabelNotes}" Binding="{Binding Notes}" Width="2*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
                         </TabItem>
 
+                        <TabItem Header="{DynamicResource UiTabHealth}">
+                            <Grid Margin="0,18,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.1*" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,12">
+                                    <StackPanel>
+                                        <WrapPanel>
+                                            <StackPanel Margin="0,0,24,0">
+                                                <TextBlock Text="{DynamicResource UiHealthLastMeasure}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding HealthLastMeasurementAt}" />
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="{DynamicResource UiHealthGlobalStatus}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding HealthGlobalStatus}" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <TextBlock Text="{DynamicResource UiHealthTrends}" FontWeight="SemiBold" Margin="0,10,0,8" />
+                                        <DataGrid ItemsSource="{Binding HealthIndicators}" IsReadOnly="True" MaxHeight="210">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Parametre" Binding="{Binding Name}" Width="*" />
+                                                <DataGridTextColumn Header="Valeur" Binding="{Binding LatestDisplay}" Width="*" />
+                                                <DataGridTextColumn Header="Tendance" Binding="{Binding Trend}" Width="*" />
+                                                <DataGridTextColumn Header="Alerte" Binding="{Binding Alert}" Width="*" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,12">
+                                    <TextBlock Text="{DynamicResource UiHealthActions}" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                    <ListBox ItemsSource="{Binding HealthRecommendedActions}" MinHeight="180" MaxHeight="252" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="{DynamicResource UiHealthPeriod}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        <ComboBox SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding SelectedTrendPeriodDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Width="180">
+                                            <ComboBoxItem Content="{DynamicResource UiHealthPeriod7}" Tag="7" />
+                                            <ComboBoxItem Content="{DynamicResource UiHealthPeriod30}" Tag="30" />
+                                            <ComboBoxItem Content="{DynamicResource UiHealthPeriod90}" Tag="90" />
+                                            <ComboBoxItem Content="{DynamicResource UiHealthPeriodAll}" Tag="0" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <TextBlock Text="{DynamicResource UiHealthParameters}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding TrendParameterOptions}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" Margin="0,0,12,6" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
+                                    <TextBlock Text="{DynamicResource UiHealthCharts}" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                        <ItemsControl ItemsSource="{Binding HealthTrendSeries}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{DynamicResource CardBorderBrush}"
+                                                            BorderThickness="1"
+                                                            Margin="0,0,8,8"
+                                                            Padding="8"
+                                                            Width="270">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                            <TextBlock Text="{Binding LatestValueLabel}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,6" />
+                                                            <Grid Width="250" ClipToBounds="True">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="150" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                </Grid.RowDefinitions>
+                                                                <Canvas Width="250" Height="150" Background="{DynamicResource InputBackgroundBrush}" ClipToBounds="True">
+                                                                    <Line X1="24" Y1="8" X2="242" Y2="8"
+                                                                          Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="0.6" />
+                                                                    <Line X1="24" Y1="70" X2="242" Y2="70"
+                                                                          Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="0.6" />
+                                                                    <Line X1="24" Y1="132" X2="242" Y2="132"
+                                                                          Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="0.6" />
+                                                                    <Line X1="24" Y1="8" X2="24" Y2="132"
+                                                                          Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="0.6" />
+                                                                    <Line X1="133" Y1="8" X2="133" Y2="132"
+                                                                          Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="0.6" />
+                                                                    <Line X1="242" Y1="8" X2="242" Y2="132"
+                                                                          Stroke="{DynamicResource CardBorderBrush}" StrokeThickness="0.6" />
+                                                                    <Line X1="24" Y1="8"
+                                                                          X2="24" Y2="132"
+                                                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                                                          StrokeThickness="1" />
+                                                                    <Line X1="24" Y1="132"
+                                                                          X2="242" Y2="132"
+                                                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                                                          StrokeThickness="1" />
+                                                                    <Polyline Points="{Binding Points}"
+                                                                              Stroke="{DynamicResource ButtonPrimaryBrush}"
+                                                                              StrokeThickness="2" />
+                                                                    <TextBlock Canvas.Left="0" Canvas.Top="2" Width="22" TextAlignment="Right"
+                                                                               FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               Text="{Binding YTopLabel}" />
+                                                                    <TextBlock Canvas.Left="0" Canvas.Top="64" Width="22" TextAlignment="Right"
+                                                                               FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               Text="{Binding YMidLabel}" />
+                                                                    <TextBlock Canvas.Left="0" Canvas.Top="126" Width="22" TextAlignment="Right"
+                                                                               FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                               Text="{Binding YBottomLabel}" />
+                                                                </Canvas>
+                                                                <Grid Grid.Row="1" Margin="24,4,8,0">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="*" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Grid.Column="0" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Left" Text="{Binding XStartLabel}" />
+                                                                    <TextBlock Grid.Column="1" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding XMidLabel}" />
+                                                                    <TextBlock Grid.Column="2" FontSize="10" HorizontalAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding XEndLabel}" />
+                                                                </Grid>
+                                                            </Grid>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="3" Grid.ColumnSpan="2"
+                                           Text="{DynamicResource UiHealthNoData}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,12,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HealthIndicators.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0"
+                                           Text="{DynamicResource UiHealthNoChartData}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,12,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HealthTrendSeries.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </TabItem>
+
                         <TabItem Header="{DynamicResource UiTabPlants}">
                             <DockPanel Margin="0,18,0,0">
-                                <UniformGrid DockPanel.Dock="Top" Columns="4">
+                                <UniformGrid DockPanel.Dock="Top" Columns="6">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiPlantReferenceChoice}" />
+                                        <ComboBox ItemsSource="{Binding PlantReferenceChoices}"
+                                                  SelectedItem="{Binding SelectedPlantReferenceForNewPlant, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  DisplayMemberPath="LocalizedCommonName"
+                                                  TextSearch.TextPath="LocalizedCommonName"
+                                                  IsTextSearchEnabled="True"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34" />
+                                    </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantCommonName}" />
                                         <TextBox Text="{Binding NewPlant.CommonName}" />
@@ -400,8 +795,25 @@
                                         <TextBox Text="{Binding NewPlant.ScientificName}" />
                                     </StackPanel>
                                     <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiPlantGrowth}" />
+                                        <ComboBox SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding NewPlant.GrowthSpeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34">
+                                            <ComboBoxItem Content="{DynamicResource UiGrowthSlow}" Tag="{x:Static domain:PlantGrowthSpeed.Slow}" />
+                                            <ComboBoxItem Content="{DynamicResource UiGrowthMedium}" Tag="{x:Static domain:PlantGrowthSpeed.Medium}" />
+                                            <ComboBoxItem Content="{DynamicResource UiGrowthFast}" Tag="{x:Static domain:PlantGrowthSpeed.Fast}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantLightNeed}" />
-                                        <TextBox Text="{Binding NewPlant.LightNeed}" />
+                                        <ComboBox Text="{Binding NewPlant.LightNeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34">
+                                            <ComboBoxItem Content="{DynamicResource UiLightLow}" />
+                                            <ComboBoxItem Content="{DynamicResource UiLightMedium}" />
+                                            <ComboBoxItem Content="{DynamicResource UiLightHigh}" />
+                                        </ComboBox>
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiLabelNotes}" />
@@ -412,12 +824,37 @@
                                     <Button Content="{DynamicResource UiButtonAddPlant}" Click="AddPlant_Click" />
                                     <Button Content="{DynamicResource UiButtonDeletePlant}" Click="DeletePlant_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}" SelectedItem="{Binding SelectedPlant}" IsReadOnly="False">
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}"
+                                          SelectedItem="{Binding SelectedPlant}"
+                                          IsReadOnly="False"
+                                          CellEditEnding="PlantGrid_CellEditEnding"
+                                          RowEditEnding="PlantGrid_RowEditEnding">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="{DynamicResource UiLabelName}" Binding="{Binding CommonName}" Width="*" />
-                                        <DataGridTextColumn Header="{DynamicResource UiGridScientific}" Binding="{Binding ScientificName}" Width="*" />
-                                        <DataGridTextColumn Header="{DynamicResource UiGridGrowth}" Binding="{Binding GrowthSpeed}" Width="*" />
-                                        <DataGridTextColumn Header="{DynamicResource UiPlantLightNeed}" Binding="{Binding LightNeed}" Width="*" />
+                                        <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPlantCommonName}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding ScientificName}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPlantScientificName}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GrowthSpeed}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPlantGrowth}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding LightNeed}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPlantLightNeed}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiLabelNotes}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
@@ -425,7 +862,17 @@
 
                         <TabItem Header="{DynamicResource UiTabPopulation}">
                             <DockPanel Margin="0,18,0,0">
-                                <UniformGrid DockPanel.Dock="Top" Columns="5">
+                                <UniformGrid DockPanel.Dock="Top" Columns="6">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiAnimalReferenceChoice}" />
+                                        <ComboBox ItemsSource="{Binding AnimalReferenceChoices}"
+                                                  SelectedItem="{Binding SelectedAnimalReferenceForNewPopulation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  DisplayMemberPath="LocalizedCommonName"
+                                                  TextSearch.TextPath="LocalizedCommonName"
+                                                  IsTextSearchEnabled="True"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34" />
+                                    </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantCommonName}" />
                                         <TextBox Text="{Binding NewPopulation.CommonName}" />
@@ -451,12 +898,213 @@
                                     <Button Content="{DynamicResource UiButtonAddPopulation}" Click="AddPopulation_Click" />
                                     <Button Content="{DynamicResource UiButtonDeletePopulation}" Click="DeletePopulation_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Population}" SelectedItem="{Binding SelectedPopulation}" IsReadOnly="False">
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Population}"
+                                          SelectedItem="{Binding SelectedPopulation}"
+                                          IsReadOnly="False"
+                                          CellEditEnding="PopulationGrid_CellEditEnding"
+                                          RowEditEnding="PopulationGrid_RowEditEnding">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="{DynamicResource UiLabelName}" Binding="{Binding CommonName}" Width="*" />
-                                        <DataGridTextColumn Header="{DynamicResource UiPopulationSpecies}" Binding="{Binding SpeciesName}" Width="*" />
-                                        <DataGridTextColumn Header="{DynamicResource UiPopulationType}" Binding="{Binding Type}" Width="*" />
-                                        <DataGridTextColumn Header="{DynamicResource UiPopulationQuantity}" Binding="{Binding Quantity}" Width="*" />
+                                        <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPlantCommonName}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding SpeciesName}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPopulationSpecies}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Type}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPopulationType}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Quantity}" Width="*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiPopulationQuantity}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiLabelNotes}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+
+                        <TabItem Header="{DynamicResource UiTabPlantReference}">
+                            <DockPanel Margin="0,18,0,0">
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="{DynamicResource UiPlantRefSearchMore}" Click="PlantReferenceSearch_Click" />
+                                    <Button Content="{DynamicResource UiPlantRefCheckCompatibility}" Click="PlantReferenceCompatibility_Click" />
+                                    <Button Content="Modifier reference" Click="PlantReferenceEdit_Click" />
+                                    <Button Content="{DynamicResource UiPlantRefDelete}" Click="PlantReferenceDelete_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
+                                    <Button Content="Reinitialiser referentiel" Click="PlantReferenceReset_Click" />
+                                </StackPanel>
+                                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="pH min" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterPhMin, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="pH max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterPhMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="GH min" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterGhMin, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="GH max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterGhMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="KH min" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterKhMin, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="KH max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterKhMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="Temp min" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterTempMin, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="Temp max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterTempMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="NH3 max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterAmmoniaMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="NO2 max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterNitritesMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="NO3 max" />
+                                        <TextBox Width="70" Text="{Binding PlantFilterNitratesMax, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6" VerticalAlignment="Bottom">
+                                        <Button Content="{DynamicResource UiPlantRefApplyFilters}" Click="PlantReferenceApplyFilters_Click" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,6" VerticalAlignment="Bottom">
+                                        <Button Content="{DynamicResource UiPlantRefResetFilters}" Click="PlantReferenceResetFilters_Click" />
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock DockPanel.Dock="Top"
+                                           Text="{Binding PlantReferenceEnvironmentLabel}"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8" />
+                                <DataGrid ItemsSource="{Binding PlantReferencesFiltered}" SelectedItem="{Binding SelectedPlantReference}" IsReadOnly="True" MouseDoubleClick="PlantReferencesGrid_MouseDoubleClick">
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow">
+                                            <Setter Property="Background" Value="{Binding RowBackgroundBrush}" />
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Binding="{Binding EnvironmentLabel}" Width="120"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefEnvironment}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding LocalizedCommonName}" Width="160"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefCommonName}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding ScientificName}" Width="180"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefScientificName}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding PhMin}" Width="80" ElementStyle="{StaticResource PlantRefPhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefPhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding PhMax}" Width="80" ElementStyle="{StaticResource PlantRefPhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefPhMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GhMin}" Width="80" ElementStyle="{StaticResource PlantRefGhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefGhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GhMax}" Width="80" ElementStyle="{StaticResource PlantRefGhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefGhMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding KhMin}" Width="80" ElementStyle="{StaticResource PlantRefKhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefKhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding KhMax}" Width="80" ElementStyle="{StaticResource PlantRefKhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefKhMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding TemperatureMin}" Width="90" ElementStyle="{StaticResource PlantRefTempCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefTempMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding TemperatureMax}" Width="90" ElementStyle="{StaticResource PlantRefTempCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefTempMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding AmmoniaMin}" Width="90" ElementStyle="{StaticResource PlantRefNh3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNh3Min}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding AmmoniaMax}" Width="90" ElementStyle="{StaticResource PlantRefNh3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNh3Max}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitritesMin}" Width="90" ElementStyle="{StaticResource PlantRefNo2CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo2Min}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitritesMax}" Width="90" ElementStyle="{StaticResource PlantRefNo2CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo2Max}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitratesMin}" Width="90" ElementStyle="{StaticResource PlantRefNo3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo3Min}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitratesMax}" Width="90" ElementStyle="{StaticResource PlantRefNo3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo3Max}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding VolumeMinLiters}" Width="90"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefVolumeMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding LightNeed}" Width="100"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefLight}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Co2Need}" Width="90"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefCo2}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding FertilizationNeed}" Width="110"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefFertilization}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GrowthSpeed}" Width="100"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefGrowth}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding RecommendedPlacement}" Width="120"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefPlacement}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Behavior}" Width="140"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefBehavior}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Compatibility}" Width="180"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefCompatibility}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding SourceUrl}" Width="260"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefSourceUrl}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock DockPanel.Dock="Bottom"
+                                           Text="{DynamicResource UiPlantRefNoData}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,10,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PlantReferencesFiltered.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+                        </TabItem>
+
+                        <TabItem Header="Referentiel population">
+                            <DockPanel Margin="0,18,0,0">
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="Recherches complementaires" Click="AnimalReferenceSearch_Click" />
+                                    <Button Content="Verifier compatibilite" Click="AnimalReferenceCompatibility_Click" />
+                                    <Button Content="Modifier reference" Click="AnimalReferenceEdit_Click" />
+                                    <Button Content="Supprimer reference" Click="AnimalReferenceDelete_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
+                                    <Button Content="Reinitialiser referentiel" Click="AnimalReferenceReset_Click" />
+                                </StackPanel>
+                                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="pH min" /><TextBox Width="70" Text="{Binding AnimalFilterPhMin, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="pH max" /><TextBox Width="70" Text="{Binding AnimalFilterPhMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="GH min" /><TextBox Width="70" Text="{Binding AnimalFilterGhMin, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="GH max" /><TextBox Width="70" Text="{Binding AnimalFilterGhMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="KH min" /><TextBox Width="70" Text="{Binding AnimalFilterKhMin, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="KH max" /><TextBox Width="70" Text="{Binding AnimalFilterKhMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="Temp min" /><TextBox Width="70" Text="{Binding AnimalFilterTempMin, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="Temp max" /><TextBox Width="70" Text="{Binding AnimalFilterTempMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="NH3 max" /><TextBox Width="70" Text="{Binding AnimalFilterAmmoniaMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="NO2 max" /><TextBox Width="70" Text="{Binding AnimalFilterNitritesMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6"><TextBlock Text="NO3 max" /><TextBox Width="70" Text="{Binding AnimalFilterNitratesMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6" VerticalAlignment="Bottom"><Button Content="Appliquer filtres" Click="AnimalReferenceApplyFilters_Click" /></StackPanel>
+                                    <StackPanel Margin="0,0,10,6" VerticalAlignment="Bottom"><Button Content="Reinitialiser filtres" Click="AnimalReferenceResetFilters_Click" /></StackPanel>
+                                </WrapPanel>
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding AnimalReferenceEnvironmentLabel}" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <DataGrid ItemsSource="{Binding AnimalReferencesFiltered}" SelectedItem="{Binding SelectedAnimalReference}" IsReadOnly="True" MouseDoubleClick="AnimalReferencesGrid_MouseDoubleClick">
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow">
+                                            <Setter Property="Background" Value="{Binding RowBackgroundBrush}" />
+                                        </Style>
+                                    </DataGrid.RowStyle>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Binding="{Binding EnvironmentLabel}" Width="120"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefEnvironment}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding LocalizedCommonName}" Width="160"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefCommonName}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding ScientificName}" Width="180"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefScientificName}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding PhMin}" Width="80" ElementStyle="{StaticResource PlantRefPhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefPhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding PhMax}" Width="80" ElementStyle="{StaticResource PlantRefPhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefPhMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GhMin}" Width="80" ElementStyle="{StaticResource PlantRefGhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefGhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GhMax}" Width="80" ElementStyle="{StaticResource PlantRefGhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefGhMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding KhMin}" Width="80" ElementStyle="{StaticResource PlantRefKhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefKhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding KhMax}" Width="80" ElementStyle="{StaticResource PlantRefKhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefKhMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding TemperatureMin}" Width="90" ElementStyle="{StaticResource PlantRefTempCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefTempMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding TemperatureMax}" Width="90" ElementStyle="{StaticResource PlantRefTempCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefTempMax}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding AmmoniaMin}" Width="90" ElementStyle="{StaticResource PlantRefNh3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNh3Min}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding AmmoniaMax}" Width="90" ElementStyle="{StaticResource PlantRefNh3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNh3Max}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitritesMin}" Width="90" ElementStyle="{StaticResource PlantRefNo2CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo2Min}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitritesMax}" Width="90" ElementStyle="{StaticResource PlantRefNo2CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo2Max}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitratesMin}" Width="90" ElementStyle="{StaticResource PlantRefNo3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo3Min}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding NitratesMax}" Width="90" ElementStyle="{StaticResource PlantRefNo3CellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefNo3Max}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding VolumeMinLiters}" Width="90"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefVolumeMin}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Behavior}" Width="150"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefBehavior}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Compatibility}" Width="180"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefCompatibility}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding SourceUrl}" Width="260"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefSourceUrl}" /></DataGridTextColumn.Header></DataGridTextColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
@@ -470,6 +1118,8 @@
                                         <Button Content="{DynamicResource UiButtonConfigureMySql}" Click="ConfigureDatabase_Click" Height="34" />
                                         <Button Content="{DynamicResource UiButtonInitializeMySql}" Click="InitializeDatabase_Click" Height="34" />
                                         <Button Content="{DynamicResource UiButtonSave}" Click="Save_Click" Height="34" />
+                                        <Button Content="Rafraichir log" Click="RefreshLog_Click" Height="34" />
+                                        <Button Content="Ouvrir log" Click="OpenLogFile_Click" Height="34" />
                                     </StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -478,7 +1128,7 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{DynamicResource UiLabelLanguage}" />
-                                            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34" Background="#FFFFFF" Foreground="#172326" VerticalContentAlignment="Center" Padding="8,0">
+                                            <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34">
                                                 <ComboBoxItem Content="{DynamicResource UiLangFrench}" Tag="fr" />
                                                 <ComboBoxItem Content="{DynamicResource UiLangEnglish}" Tag="en" />
                                                 <ComboBoxItem Content="{DynamicResource UiLangGerman}" Tag="de" />
@@ -486,12 +1136,23 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="1">
                                             <TextBlock Text="{DynamicResource UiLabelTheme}" />
-                                            <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34" Background="#FFFFFF" Foreground="#172326" VerticalContentAlignment="Center" Padding="8,0">
+                                            <ComboBox x:Name="ThemeComboBox" SelectionChanged="ThemeComboBox_SelectionChanged" Margin="0,4,12,12" MinHeight="34">
                                                 <ComboBoxItem Content="{DynamicResource UiThemeLight}" Tag="light" />
                                                 <ComboBoxItem Content="{DynamicResource UiThemeDark}" Tag="dark" />
                                             </ComboBox>
                                         </StackPanel>
                                     </Grid>
+                                    <TextBlock Text="Journal applicatif" Margin="0,4,0,4" FontWeight="SemiBold" />
+                                    <TextBox x:Name="AppLogTextBox"
+                                             Text="{Binding ApplicationLogText}"
+                                             IsReadOnly="True"
+                                             Style="{StaticResource LongTextBoxStyle}"
+                                             AcceptsReturn="True"
+                                             TextWrapping="NoWrap"
+                                             VerticalScrollBarVisibility="Visible"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             Height="220"
+                                             MaxHeight="220" />
                                 </StackPanel>
                             </DockPanel>
                         </TabItem>
