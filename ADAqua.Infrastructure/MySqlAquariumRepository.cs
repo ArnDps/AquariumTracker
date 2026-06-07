@@ -22,7 +22,8 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     [
         "WaterMeasurements",
         "AquariumPlants",
-        "PopulationMembers"
+        "PopulationMembers",
+        "AquariumInterventions"
     ];
 
     public async Task<IReadOnlyList<Aquarium>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -30,11 +31,14 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
 
+        await EnsureAquariumChildSchemaUpgradedAsync(connection, cancellationToken);
+
         var aquariums = new Dictionary<Guid, Aquarium>();
         await LoadAquariumsAsync(connection, aquariums, cancellationToken);
         await LoadMeasurementsAsync(connection, aquariums, cancellationToken);
         await LoadPlantsAsync(connection, aquariums, cancellationToken);
         await LoadPopulationAsync(connection, aquariums, cancellationToken);
+        await LoadInterventionsAsync(connection, aquariums, cancellationToken);
 
         return aquariums.Values.OrderBy(aquarium => aquarium.Name).ToList();
     }
@@ -43,6 +47,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
+        await EnsureAquariumChildSchemaUpgradedAsync(connection, cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
         await ExecuteAsync(
@@ -94,6 +99,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
 
+        await EnsureAquariumChildSchemaUpgradedAsync(connection, cancellationToken);
         await EnsurePlantReferenceSchemaUpgradedAsync(connection, cancellationToken);
         await EnsurePlantReferenceImportCandidateSchemaAsync(connection, cancellationToken);
         await EnsureAnimalReferenceSchemaUpgradedAsync(connection, cancellationToken);
@@ -261,7 +267,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
     private static async Task LoadPlantsAsync(MySqlConnection connection, Dictionary<Guid, Aquarium> aquariums, CancellationToken cancellationToken)
     {
-        await using var command = new MySqlCommand("SELECT Id, AquariumId, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes FROM AquariumPlants;", connection);
+        await using var command = new MySqlCommand("SELECT Id, AquariumId, AddedOn, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes FROM AquariumPlants;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
@@ -269,18 +275,19 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             aquarium.Plants.Add(new AquariumPlant
             {
                 Id = ReadGuid(reader, 0),
-                CommonName = reader.GetString(2),
-                ScientificName = reader.GetString(3),
-                GrowthSpeed = Enum.Parse<PlantGrowthSpeed>(reader.GetString(4)),
-                LightNeed = reader.GetString(5),
-                Notes = reader.GetString(6)
+                AddedOn = reader.GetDateTime(2).Date,
+                CommonName = reader.GetString(3),
+                ScientificName = reader.GetString(4),
+                GrowthSpeed = Enum.Parse<PlantGrowthSpeed>(reader.GetString(5)),
+                LightNeed = reader.GetString(6),
+                Notes = reader.GetString(7)
             });
         }
     }
 
     private static async Task LoadPopulationAsync(MySqlConnection connection, Dictionary<Guid, Aquarium> aquariums, CancellationToken cancellationToken)
     {
-        await using var command = new MySqlCommand("SELECT Id, AquariumId, SpeciesName, CommonName, Type, Quantity, Notes FROM PopulationMembers;", connection);
+        await using var command = new MySqlCommand("SELECT Id, AquariumId, AddedOn, SpeciesName, CommonName, Type, Quantity, Notes FROM PopulationMembers;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
@@ -288,11 +295,41 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             aquarium.Population.Add(new PopulationMember
             {
                 Id = ReadGuid(reader, 0),
-                SpeciesName = reader.GetString(2),
-                CommonName = reader.GetString(3),
-                Type = Enum.Parse<PopulationType>(reader.GetString(4)),
-                Quantity = reader.GetInt32(5),
-                Notes = reader.GetString(6)
+                AddedOn = reader.GetDateTime(2).Date,
+                SpeciesName = reader.GetString(3),
+                CommonName = reader.GetString(4),
+                Type = Enum.Parse<PopulationType>(reader.GetString(5)),
+                Quantity = reader.GetInt32(6),
+                Notes = reader.GetString(7)
+            });
+        }
+    }
+
+    private static async Task LoadInterventionsAsync(MySqlConnection connection, Dictionary<Guid, Aquarium> aquariums, CancellationToken cancellationToken)
+    {
+        await using var command = new MySqlCommand(
+            """
+            SELECT Id, AquariumId, OccurredAt, Type, ProductName, ProductQuantity, WaterVolumeLiters, WaterPercentage,
+                   PopulationChangeReason, PopulationChangeCount, Notes
+            FROM AquariumInterventions
+            ORDER BY AquariumId, OccurredAt DESC;
+            """, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
+        {
+            aquarium.Interventions.Add(new AquariumIntervention
+            {
+                Id = ReadGuid(reader, 0),
+                OccurredAt = reader.GetDateTime(2),
+                Type = Enum.Parse<InterventionType>(reader.GetString(3)),
+                ProductName = reader.GetString(4),
+                ProductQuantity = reader.GetString(5),
+                WaterVolumeLiters = ReadNullableDecimal(reader, 6),
+                WaterPercentage = ReadNullableDecimal(reader, 7),
+                PopulationChangeReason = reader.GetString(8),
+                PopulationChangeCount = reader.IsDBNull(9) ? null : reader.GetInt32(9),
+                Notes = reader.GetString(10)
             });
         }
     }
@@ -340,9 +377,10 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 connection,
                 transaction,
                 """
-                INSERT INTO AquariumPlants (Id, AquariumId, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes)
-                VALUES (@Id, @AquariumId, @CommonName, @ScientificName, @GrowthSpeed, @LightNeed, @Notes)
+                INSERT INTO AquariumPlants (Id, AquariumId, AddedOn, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes)
+                VALUES (@Id, @AquariumId, @AddedOn, @CommonName, @ScientificName, @GrowthSpeed, @LightNeed, @Notes)
                 ON DUPLICATE KEY UPDATE
+                    AddedOn = VALUES(AddedOn),
                     CommonName = VALUES(CommonName),
                     ScientificName = VALUES(ScientificName),
                     GrowthSpeed = VALUES(GrowthSpeed),
@@ -352,6 +390,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 cancellationToken,
                 Parameter("@Id", plant.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
+                Parameter("@AddedOn", NormalizeDateOrToday(plant.AddedOn)),
                 Parameter("@CommonName", CapitalizeFirstLetter(plant.CommonName, 120)),
                 Parameter("@ScientificName", plant.ScientificName),
                 Parameter("@GrowthSpeed", plant.GrowthSpeed.ToString()),
@@ -367,9 +406,10 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 connection,
                 transaction,
                 """
-                INSERT INTO PopulationMembers (Id, AquariumId, SpeciesName, CommonName, Type, Quantity, Notes)
-                VALUES (@Id, @AquariumId, @SpeciesName, @CommonName, @Type, @Quantity, @Notes)
+                INSERT INTO PopulationMembers (Id, AquariumId, AddedOn, SpeciesName, CommonName, Type, Quantity, Notes)
+                VALUES (@Id, @AquariumId, @AddedOn, @SpeciesName, @CommonName, @Type, @Quantity, @Notes)
                 ON DUPLICATE KEY UPDATE
+                    AddedOn = VALUES(AddedOn),
                     SpeciesName = VALUES(SpeciesName),
                     CommonName = VALUES(CommonName),
                     Type = VALUES(Type),
@@ -379,6 +419,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 cancellationToken,
                 Parameter("@Id", member.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
+                Parameter("@AddedOn", NormalizeDateOrToday(member.AddedOn)),
                 Parameter("@SpeciesName", member.SpeciesName),
                 Parameter("@CommonName", CapitalizeFirstLetter(member.CommonName, 120)),
                 Parameter("@Type", member.Type.ToString()),
@@ -387,6 +428,45 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         }
 
         await DeleteMissingChildrenAsync(connection, transaction, "PopulationMembers", aquarium.Id, aquarium.Population.Select(member => member.Id), cancellationToken);
+
+        foreach (var intervention in aquarium.Interventions)
+        {
+            await ExecuteAsync(
+                connection,
+                transaction,
+                """
+                INSERT INTO AquariumInterventions (
+                    Id, AquariumId, OccurredAt, Type, ProductName, ProductQuantity, WaterVolumeLiters, WaterPercentage,
+                    PopulationChangeReason, PopulationChangeCount, Notes)
+                VALUES (
+                    @Id, @AquariumId, @OccurredAt, @Type, @ProductName, @ProductQuantity, @WaterVolumeLiters, @WaterPercentage,
+                    @PopulationChangeReason, @PopulationChangeCount, @Notes)
+                ON DUPLICATE KEY UPDATE
+                    OccurredAt = VALUES(OccurredAt),
+                    Type = VALUES(Type),
+                    ProductName = VALUES(ProductName),
+                    ProductQuantity = VALUES(ProductQuantity),
+                    WaterVolumeLiters = VALUES(WaterVolumeLiters),
+                    WaterPercentage = VALUES(WaterPercentage),
+                    PopulationChangeReason = VALUES(PopulationChangeReason),
+                    PopulationChangeCount = VALUES(PopulationChangeCount),
+                    Notes = VALUES(Notes);
+                """,
+                cancellationToken,
+                Parameter("@Id", intervention.Id.ToString()),
+                Parameter("@AquariumId", aquarium.Id.ToString()),
+                Parameter("@OccurredAt", intervention.OccurredAt),
+                Parameter("@Type", intervention.Type.ToString()),
+                Parameter("@ProductName", intervention.ProductName),
+                Parameter("@ProductQuantity", intervention.ProductQuantity),
+                Parameter("@WaterVolumeLiters", intervention.WaterVolumeLiters),
+                Parameter("@WaterPercentage", intervention.WaterPercentage),
+                Parameter("@PopulationChangeReason", intervention.PopulationChangeReason),
+                Parameter("@PopulationChangeCount", intervention.PopulationChangeCount),
+                Parameter("@Notes", intervention.Notes));
+        }
+
+        await DeleteMissingChildrenAsync(connection, transaction, "AquariumInterventions", aquarium.Id, aquarium.Interventions.Select(intervention => intervention.Id), cancellationToken);
     }
 
     private static async Task DeleteMissingChildrenAsync(MySqlConnection connection, MySqlTransaction transaction, string tableName, Guid aquariumId, IEnumerable<Guid> retainedIds, CancellationToken cancellationToken)
@@ -429,6 +509,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             ParameterName = name,
             Value = value ?? DBNull.Value
         };
+    }
+
+    private static DateTime NormalizeDateOrToday(DateTime value)
+    {
+        return value == default ? DateTime.Today : value.Date;
     }
 
     private static decimal? ReadNullableDecimal(MySqlDataReader reader, int ordinal)
@@ -577,6 +662,32 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@SourceUrl", animal.SourceUrl)
             });
             await insertCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+    }
+
+    private static async Task EnsureAquariumChildSchemaUpgradedAsync(MySqlConnection connection, CancellationToken cancellationToken)
+    {
+        var alterStatements = new[]
+        {
+            "ALTER TABLE AquariumPlants ADD COLUMN AddedOn DATE NULL AFTER AquariumId;",
+            "UPDATE AquariumPlants SET AddedOn = CURRENT_DATE WHERE AddedOn IS NULL;",
+            "ALTER TABLE AquariumPlants MODIFY AddedOn DATE NOT NULL;",
+            "ALTER TABLE PopulationMembers ADD COLUMN AddedOn DATE NULL AFTER AquariumId;",
+            "UPDATE PopulationMembers SET AddedOn = CURRENT_DATE WHERE AddedOn IS NULL;",
+            "ALTER TABLE PopulationMembers MODIFY AddedOn DATE NOT NULL;"
+        };
+
+        foreach (var sql in alterStatements)
+        {
+            try
+            {
+                await using var command = new MySqlCommand(sql, connection);
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch
+            {
+                // Ignore if schema already compatible or statement not supported by provider.
+            }
         }
     }
 
@@ -3120,7 +3231,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
         var reference = new AnimalReference
         {
-            Environment = InferAnimalEnvironment(url, html, defaultEnvironment),
+            Environment = InferAnimalEnvironment(url, html, normalizedScientific, defaultEnvironment),
             CommonName = ExtractCommonNameFromProfilePage(url, pageHeading, normalizedScientific),
             ScientificName = normalizedScientific,
             SourceUrl = url
@@ -4635,10 +4746,22 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     private static AnimalReferenceEnvironment InferAnimalEnvironment(
         string url,
         string html,
+        string scientificName,
         AnimalReferenceEnvironment defaultEnvironment)
     {
         var loweredUrl = url.ToLowerInvariant();
         var text = CleanHtmlText(html).ToLowerInvariant();
+        var genus = scientificName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+
+        if (IsKnownFreshwaterGenus(genus))
+        {
+            return AnimalReferenceEnvironment.FreshwaterTropical;
+        }
+
+        if (IsKnownMarineGenus(genus))
+        {
+            return AnimalReferenceEnvironment.Marine;
+        }
 
         if (loweredUrl.Contains("eau-douce")
             || loweredUrl.Contains("freshwater")
@@ -4650,6 +4773,12 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             return AnimalReferenceEnvironment.FreshwaterTropical;
         }
 
+        if (defaultEnvironment == AnimalReferenceEnvironment.FreshwaterTropical
+            && loweredUrl.Contains("fishipedia.fr", StringComparison.OrdinalIgnoreCase))
+        {
+            return defaultEnvironment;
+        }
+
         if (loweredUrl.Contains("eau-de-mer")
             || loweredUrl.Contains("saltwater")
             || Regex.IsMatch(text, @"\b(eau de mer|eau-de-mer|poisson marin|poissons marins|aquarium marin|recifal|récifal|saltwater|reef)\b", RegexOptions.IgnoreCase))
@@ -4658,6 +4787,38 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         }
 
         return defaultEnvironment;
+    }
+
+    private static bool IsKnownFreshwaterGenus(string genus)
+    {
+        var freshwaterGenera = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Aborichthys",
+            "Abramis",
+            "Abramites",
+            "Acanthicus",
+            "Acapoeta",
+            "Acarichthys",
+            "Acaronia",
+            "Acestridium",
+            "Acnodon",
+            "Huso"
+        };
+
+        return freshwaterGenera.Contains(genus);
+    }
+
+    private static bool IsKnownMarineGenus(string genus)
+    {
+        var marineGenera = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Abudefduf",
+            "Acanthurus",
+            "Amphiprion",
+            "Zebrasoma"
+        };
+
+        return marineGenera.Contains(genus);
     }
 
     private static bool LooksLikeScientificName(string genus, string species)

@@ -35,10 +35,13 @@
         <sys:String x:Key="UiTabPlants">Plantes</sys:String>
         <sys:String x:Key="UiTabPlantReference">Referentiel plantes</sys:String>
         <sys:String x:Key="UiTabPopulation">Population</sys:String>
+        <sys:String x:Key="UiTabInterventions">Interventions</sys:String>
         <sys:String x:Key="UiTabSettings">Parametrages</sys:String>
         <sys:String x:Key="UiLabelName">Nom</sys:String>
         <sys:String x:Key="UiLabelVolume">Volume (L)</sys:String>
         <sys:String x:Key="UiLabelWaterType">Type d'eau</sys:String>
+        <sys:String x:Key="UiWaterTypeFreshwaterTropical">Eau douce tropicale</sys:String>
+        <sys:String x:Key="UiWaterTypeMarine">Eau de mer</sys:String>
         <sys:String x:Key="UiLabelStartedOn">Mise en eau</sys:String>
         <sys:String x:Key="UiLabelNotes">Notes</sys:String>
         <sys:String x:Key="UiLabelAmmonia">Amoniac mg/L</sys:String>
@@ -52,6 +55,7 @@
         <sys:String x:Key="UiButtonDuplicateMeasurement">Dupliquer la mesure</sys:String>
         <sys:String x:Key="UiButtonDeleteMeasurement">Supprimer la mesure</sys:String>
         <sys:String x:Key="UiGridDate">Date</sys:String>
+        <sys:String x:Key="UiAddedOn">Date d'ajout</sys:String>
         <sys:String x:Key="UiPlantCommonName">Nom courant</sys:String>
         <sys:String x:Key="UiPlantReferenceChoice">Referentiel</sys:String>
         <sys:String x:Key="UiPlantScientificName">Nom scientifique</sys:String>
@@ -105,6 +109,24 @@
         <sys:String x:Key="UiPopulationQuantity">Quantite</sys:String>
         <sys:String x:Key="UiButtonAddPopulation">Ajouter la population</sys:String>
         <sys:String x:Key="UiButtonDeletePopulation">Supprimer la population</sys:String>
+        <sys:String x:Key="UiInterventionDate">Date</sys:String>
+        <sys:String x:Key="UiInterventionTime">Heure</sys:String>
+        <sys:String x:Key="UiInterventionType">Type</sys:String>
+        <sys:String x:Key="UiInterventionWaterChange">Changement d'eau</sys:String>
+        <sys:String x:Key="UiInterventionFertilization">Fertilisation</sys:String>
+        <sys:String x:Key="UiInterventionFilterCleaning">Nettoyage filtre</sys:String>
+        <sys:String x:Key="UiInterventionPopulationAdded">Ajout population</sys:String>
+        <sys:String x:Key="UiInterventionPopulationRemoved">Retrait population</sys:String>
+        <sys:String x:Key="UiInterventionMedicalTreatment">Traitement medical</sys:String>
+        <sys:String x:Key="UiInterventionOther">Autre</sys:String>
+        <sys:String x:Key="UiInterventionProductName">Produit</sys:String>
+        <sys:String x:Key="UiInterventionProductQuantity">Quantite produit</sys:String>
+        <sys:String x:Key="UiInterventionWaterVolume">Eau remplacee (L)</sys:String>
+        <sys:String x:Key="UiInterventionWaterPercent">Eau remplacee (%)</sys:String>
+        <sys:String x:Key="UiInterventionPopulationReason">Raison population</sys:String>
+        <sys:String x:Key="UiInterventionPopulationCount">Individus</sys:String>
+        <sys:String x:Key="UiButtonAddIntervention">Ajouter l'intervention</sys:String>
+        <sys:String x:Key="UiButtonDeleteIntervention">Supprimer l'intervention</sys:String>
         <sys:String x:Key="UiDbActionsHelp">Actions base de donnees et maintenance.</sys:String>
         <sys:String x:Key="UiButtonConfigureMySql">Configurer MySQL</sys:String>
         <sys:String x:Key="UiButtonInitializeMySql">Initialiser MySQL</sys:String>
@@ -121,6 +143,7 @@
         <sys:String x:Key="UiHealthPeriod90">90 jours</sys:String>
         <sys:String x:Key="UiHealthPeriodAll">Tout l'historique</sys:String>
         <sys:String x:Key="UiHealthParameters">Parametres a afficher</sys:String>
+        <sys:String x:Key="UiHealthTargetRange">Plage cible</sys:String>
         <sys:String x:Key="UiHealthNoChartData">Pas assez de mesures pour tracer un graphe.</sys:String>
         <sys:String x:Key="UiHealthActions">Actions conseillees</sys:String>
         <sys:String x:Key="UiHealthNoData">Aucune mesure disponible pour cet aquarium.</sys:String>
@@ -164,6 +187,7 @@
         <local:WaterParameterRangeValidationRule x:Key="KhRangeRule" Min="0" Max="15" ParameterName="KH" />
         <local:WaterParameterRangeValidationRule x:Key="TemperatureRangeRule" Min="18" Max="30" ParameterName="Temperature" />
         <local:FlexibleDecimalConverter x:Key="FlexibleDecimalConverter" />
+        <local:InterventionTypeLabelConverter x:Key="InterventionTypeLabelConverter" />
         <Style TargetType="{x:Type DatePickerTextBox}">
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="8,0" />
@@ -469,7 +493,12 @@
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="0">
                                     <TextBlock Text="{DynamicResource UiLabelWaterType}" />
-                                    <TextBox Text="{Binding SelectedAquarium.WaterType, UpdateSourceTrigger=PropertyChanged}" />
+                                    <ComboBox ItemsSource="{Binding WaterTypeOptions}"
+                                              DisplayMemberPath="Label"
+                                              SelectedValuePath="Code"
+                                              SelectedValue="{Binding SelectedAquariumWaterType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              Margin="0,4,12,12"
+                                              MinHeight="34" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="1">
                                     <TextBlock Text="{DynamicResource UiLabelStartedOn}" />
@@ -642,6 +671,7 @@
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Header="Parametre" Binding="{Binding Name}" Width="*" />
                                                 <DataGridTextColumn Header="Valeur" Binding="{Binding LatestDisplay}" Width="*" />
+                                                <DataGridTextColumn Header="{DynamicResource UiHealthTargetRange}" Binding="{Binding TargetRange}" Width="*" />
                                                 <DataGridTextColumn Header="Tendance" Binding="{Binding Trend}" Width="*" />
                                                 <DataGridTextColumn Header="Alerte" Binding="{Binding Alert}" Width="*" />
                                             </DataGrid.Columns>
@@ -794,7 +824,7 @@
 
                         <TabItem Header="{DynamicResource UiTabPlants}">
                             <DockPanel Margin="0,18,0,0">
-                                <UniformGrid DockPanel.Dock="Top" Columns="6">
+                                <UniformGrid DockPanel.Dock="Top" Columns="7">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantReferenceChoice}" />
                                         <ComboBox ItemsSource="{Binding PlantReferenceChoices}"
@@ -812,6 +842,13 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantScientificName}" />
                                         <TextBox Text="{Binding NewPlant.ScientificName}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiAddedOn}" />
+                                        <DatePicker SelectedDate="{Binding NewPlant.AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    Margin="0,4,12,12"
+                                                    MinHeight="34"
+                                                    VerticalContentAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantGrowth}" />
@@ -849,6 +886,23 @@
                                           CellEditEnding="PlantGrid_CellEditEnding"
                                           RowEditEnding="PlantGrid_RowEditEnding">
                                     <DataGrid.Columns>
+                                        <DataGridTemplateColumn Width="130" SortMemberPath="AddedOn">
+                                            <DataGridTemplateColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiAddedOn}" />
+                                            </DataGridTemplateColumn.Header>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding AddedOn, StringFormat={}{0:d}}" VerticalAlignment="Center" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <DatePicker SelectedDate="{Binding AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                MinHeight="32"
+                                                                VerticalContentAlignment="Center" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
                                         <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
                                             <DataGridTextColumn.Header>
                                                 <TextBlock Text="{DynamicResource UiPlantCommonName}" />
@@ -881,7 +935,7 @@
 
                         <TabItem Header="{DynamicResource UiTabPopulation}">
                             <DockPanel Margin="0,18,0,0">
-                                <UniformGrid DockPanel.Dock="Top" Columns="6">
+                                <UniformGrid DockPanel.Dock="Top" Columns="7">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiAnimalReferenceChoice}" />
                                         <ComboBox ItemsSource="{Binding AnimalReferenceChoices}"
@@ -899,6 +953,13 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPopulationSpecies}" />
                                         <TextBox Text="{Binding NewPopulation.SpeciesName}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiAddedOn}" />
+                                        <DatePicker SelectedDate="{Binding NewPopulation.AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    Margin="0,4,12,12"
+                                                    MinHeight="34"
+                                                    VerticalContentAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPopulationType}" />
@@ -923,6 +984,23 @@
                                           CellEditEnding="PopulationGrid_CellEditEnding"
                                           RowEditEnding="PopulationGrid_RowEditEnding">
                                     <DataGrid.Columns>
+                                        <DataGridTemplateColumn Width="130" SortMemberPath="AddedOn">
+                                            <DataGridTemplateColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiAddedOn}" />
+                                            </DataGridTemplateColumn.Header>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding AddedOn, StringFormat={}{0:d}}" VerticalAlignment="Center" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <DatePicker SelectedDate="{Binding AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                MinHeight="32"
+                                                                VerticalContentAlignment="Center" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
                                         <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
                                             <DataGridTextColumn.Header>
                                                 <TextBlock Text="{DynamicResource UiPlantCommonName}" />
@@ -941,6 +1019,154 @@
                                         <DataGridTextColumn Binding="{Binding Quantity}" Width="*">
                                             <DataGridTextColumn.Header>
                                                 <TextBlock Text="{DynamicResource UiPopulationQuantity}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiLabelNotes}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+
+                        <TabItem Header="{DynamicResource UiTabInterventions}">
+                            <DockPanel Margin="0,18,0,0">
+                                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                    <StackPanel Width="150" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionDate}" />
+                                        <DatePicker SelectedDate="{Binding NewIntervention.OccurredOnDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    Margin="0,4,0,0"
+                                                    MinHeight="34"
+                                                    VerticalContentAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Width="80" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionTime}" />
+                                        <TextBox Text="{Binding NewInterventionTimeText, UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Width="180" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionType}" />
+                                        <ComboBox SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding NewIntervention.Type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0,4,0,0"
+                                                  MinHeight="34">
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionWaterChange}" Tag="{x:Static domain:InterventionType.WaterChange}" />
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionFertilization}" Tag="{x:Static domain:InterventionType.Fertilization}" />
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionFilterCleaning}" Tag="{x:Static domain:InterventionType.FilterCleaning}" />
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionPopulationAdded}" Tag="{x:Static domain:InterventionType.PopulationAdded}" />
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionPopulationRemoved}" Tag="{x:Static domain:InterventionType.PopulationRemoved}" />
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionMedicalTreatment}" Tag="{x:Static domain:InterventionType.MedicalTreatment}" />
+                                            <ComboBoxItem Content="{DynamicResource UiInterventionOther}" Tag="{x:Static domain:InterventionType.Other}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Width="160" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionProductName}" />
+                                        <TextBox Text="{Binding NewIntervention.ProductName}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Width="130" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionProductQuantity}" />
+                                        <TextBox Text="{Binding NewIntervention.ProductQuantity}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Width="130" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionWaterVolume}" />
+                                        <TextBox Margin="0,4,0,0">
+                                            <TextBox.Text>
+                                                <Binding Path="NewIntervention.WaterVolumeLiters" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource FlexibleDecimalConverter}" />
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+                                    <StackPanel Width="130" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionWaterPercent}" />
+                                        <TextBox Margin="0,4,0,0">
+                                            <TextBox.Text>
+                                                <Binding Path="NewIntervention.WaterPercentage" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource FlexibleDecimalConverter}" />
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+                                    <StackPanel Width="180" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionPopulationReason}" />
+                                        <TextBox Text="{Binding NewIntervention.PopulationChangeReason}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Width="90" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiInterventionPopulationCount}" />
+                                        <TextBox Text="{Binding NewIntervention.PopulationChangeCount}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Width="260" Margin="0,0,12,8">
+                                        <TextBlock Text="{DynamicResource UiLabelNotes}" />
+                                        <TextBox Text="{Binding NewIntervention.Notes}" Style="{StaticResource LongTextBoxStyle}" />
+                                    </StackPanel>
+                                </WrapPanel>
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                                    <Button Content="{DynamicResource UiButtonAddIntervention}" Click="AddIntervention_Click" />
+                                    <Button Content="{DynamicResource UiButtonDeleteIntervention}" Click="DeleteIntervention_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
+                                </StackPanel>
+                                <DataGrid ItemsSource="{Binding SelectedAquarium.Interventions}"
+                                          SelectedItem="{Binding SelectedIntervention}"
+                                          IsReadOnly="False"
+                                          CellEditEnding="InterventionGrid_CellEditEnding"
+                                          RowEditEnding="InterventionGrid_RowEditEnding">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Binding="{Binding OccurredAt, StringFormat={}{0:g}}" Width="150">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionDate}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTemplateColumn Width="160">
+                                            <DataGridTemplateColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionType}" />
+                                            </DataGridTemplateColumn.Header>
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Padding="8,0" VerticalAlignment="Center">
+                                                        <TextBlock.Text>
+                                                            <MultiBinding Converter="{StaticResource InterventionTypeLabelConverter}">
+                                                                <Binding Path="Type" />
+                                                                <Binding RelativeSource="{RelativeSource AncestorType=Window}" Path="DataContext.InterventionLocalizationVersion" />
+                                                            </MultiBinding>
+                                                        </TextBlock.Text>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <ComboBox ItemsSource="{Binding DataContext.InterventionTypeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                              SelectedValue="{Binding Type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Type"
+                                                              DisplayMemberPath="Label"
+                                                              Margin="0"
+                                                              MinHeight="30" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Binding="{Binding ProductName}" Width="150">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionProductName}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding ProductQuantity}" Width="130">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionProductQuantity}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding WaterVolumeLiters, Converter={StaticResource FlexibleDecimalConverter}}" Width="120">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionWaterVolume}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding WaterPercentage, Converter={StaticResource FlexibleDecimalConverter}}" Width="120">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionWaterPercent}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding PopulationChangeReason}" Width="170">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionPopulationReason}" />
+                                            </DataGridTextColumn.Header>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding PopulationChangeCount}" Width="90">
+                                            <DataGridTextColumn.Header>
+                                                <TextBlock Text="{DynamicResource UiInterventionPopulationCount}" />
                                             </DataGridTextColumn.Header>
                                         </DataGridTextColumn>
                                         <DataGridTextColumn Binding="{Binding Notes}" Width="2*">

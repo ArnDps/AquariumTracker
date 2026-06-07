@@ -13,4 +13,5 @@ public sealed class Aquarium
     public ObservableCollection<WaterParameters> Measurements { get; } = [];
     public ObservableCollection<AquariumPlant> Plants { get; } = [];
     public ObservableCollection<PopulationMember> Population { get; } = [];
+    public ObservableCollection<AquariumIntervention> Interventions { get; } = [];
 }

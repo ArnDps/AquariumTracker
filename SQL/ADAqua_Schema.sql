@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS WaterMeasurements (
 CREATE TABLE IF NOT EXISTS AquariumPlants (
     Id CHAR(36) NOT NULL PRIMARY KEY,
     AquariumId CHAR(36) NOT NULL,
+    AddedOn DATE NOT NULL,
     CommonName VARCHAR(120) NOT NULL,
     ScientificName VARCHAR(160) NOT NULL,
     GrowthSpeed VARCHAR(30) NOT NULL,
@@ -39,12 +40,29 @@ CREATE TABLE IF NOT EXISTS AquariumPlants (
 CREATE TABLE IF NOT EXISTS PopulationMembers (
     Id CHAR(36) NOT NULL PRIMARY KEY,
     AquariumId CHAR(36) NOT NULL,
+    AddedOn DATE NOT NULL,
     SpeciesName VARCHAR(160) NOT NULL,
     CommonName VARCHAR(120) NOT NULL,
     Type VARCHAR(40) NOT NULL,
     Quantity INT NOT NULL,
     Notes TEXT NOT NULL,
     CONSTRAINT FK_PopulationMembers_Aquariums FOREIGN KEY (AquariumId) REFERENCES Aquariums(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS AquariumInterventions (
+    Id CHAR(36) NOT NULL PRIMARY KEY,
+    AquariumId CHAR(36) NOT NULL,
+    OccurredAt DATETIME NOT NULL,
+    Type VARCHAR(40) NOT NULL,
+    ProductName VARCHAR(160) NOT NULL,
+    ProductQuantity VARCHAR(80) NOT NULL,
+    WaterVolumeLiters DECIMAL(8,2) NULL,
+    WaterPercentage DECIMAL(5,2) NULL,
+    PopulationChangeReason VARCHAR(220) NOT NULL,
+    PopulationChangeCount INT NULL,
+    Notes TEXT NOT NULL,
+    CONSTRAINT FK_AquariumInterventions_Aquariums FOREIGN KEY (AquariumId) REFERENCES Aquariums(Id) ON DELETE CASCADE,
+    INDEX IX_AquariumInterventions_AquariumId_OccurredAt (AquariumId, OccurredAt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS PlantReferences (
