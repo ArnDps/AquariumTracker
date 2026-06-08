@@ -41,6 +41,7 @@ public partial class MainWindow : Window
         viewModel.SetTextProvider(T);
         viewModel.PropertyChanged += ViewModelOnPropertyChanged;
         viewModel.SelectedAquariumWaterTypeChanged += ViewModelOnSelectedAquariumWaterTypeChanged;
+        viewModel.SelectedAquariumContainerTypeChanged += ViewModelOnSelectedAquariumWaterTypeChanged;
         AppLogger.Info("Application started.");
 
         var appSettings = AppSettingsStore.Load();
@@ -252,13 +253,14 @@ public partial class MainWindow : Window
     private void ApplyWaterParameterValidationRanges()
     {
         var marine = viewModel.IsSelectedAquariumMarine;
+        var pond = viewModel.IsSelectedContainerFishPond;
         SetValidationRange("AmmoniaRangeRule", 0m, marine ? 0.2m : 0.5m);
         SetValidationRange("NitritesRangeRule", 0m, marine ? 0.1m : 0.2m);
-        SetValidationRange("NitratesRangeRule", 0m, marine ? 60m : 100m);
-        SetValidationRange("PhRangeRule", marine ? 7.6m : 6m, marine ? 8.6m : 8.5m);
-        SetValidationRange("GhRangeRule", marine ? 6m : 1m, marine ? 30m : 20m);
-        SetValidationRange("KhRangeRule", marine ? 6m : 0m, marine ? 14m : 15m);
-        SetValidationRange("TemperatureRangeRule", marine ? 22m : 18m, marine ? 30m : 30m);
+        SetValidationRange("NitratesRangeRule", 0m, pond ? 120m : marine ? 60m : 100m);
+        SetValidationRange("PhRangeRule", pond ? 6.5m : marine ? 7.6m : 6m, pond ? 9m : marine ? 8.6m : 8.5m);
+        SetValidationRange("GhRangeRule", pond ? 1m : marine ? 6m : 1m, pond ? 25m : marine ? 30m : 20m);
+        SetValidationRange("KhRangeRule", pond ? 3m : marine ? 6m : 0m, pond ? 18m : marine ? 14m : 15m);
+        SetValidationRange("TemperatureRangeRule", pond ? 0m : marine ? 22m : 18m, pond ? 32m : marine ? 30m : 30m);
     }
 
     private void SetValidationRange(string resourceKey, decimal min, decimal max)
@@ -729,7 +731,7 @@ public partial class MainWindow : Window
     private void PlantReferenceCompatibility_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ApplyPlantReferenceCompatibilityHighlight();
-        viewModel.StatusMessage = "Compatibilite plantes evaluee sur la derniere mesure de l'aquarium selectionne.";
+        viewModel.StatusMessage = "Compatibilite plantes evaluee sur la derniere mesure du contenant selectionne.";
     }
 
     private void PlantReferenceApplyFilters_Click(object sender, RoutedEventArgs e)
@@ -1003,7 +1005,7 @@ public partial class MainWindow : Window
     private void AnimalReferenceCompatibility_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ApplyAnimalReferenceCompatibilityHighlight();
-        viewModel.StatusMessage = "Compatibilite especes evaluee sur la derniere mesure de l'aquarium selectionne.";
+        viewModel.StatusMessage = "Compatibilite especes evaluee sur la derniere mesure du contenant selectionne.";
     }
 
     private void AnimalReferenceApplyFilters_Click(object sender, RoutedEventArgs e)
@@ -1060,7 +1062,7 @@ public partial class MainWindow : Window
         var borderBrush = TryFindResource("CardBorderBrush") as Brush ?? Brushes.LightGray;
 
         var environmentInput = CreateEditComboBox(inputBrush, textBrush, borderBrush);
-        environmentInput.Items.Add("Eau douce tropicale");
+        environmentInput.Items.Add("Eau douce");
         environmentInput.Items.Add("Eau de mer");
         environmentInput.SelectedIndex = source.Environment == PlantReferenceEnvironment.Marine ? 1 : 0;
 
@@ -1308,7 +1310,7 @@ public partial class MainWindow : Window
         var borderBrush = TryFindResource("CardBorderBrush") as Brush ?? Brushes.LightGray;
 
         var environmentInput = CreateEditComboBox(inputBrush, textBrush, borderBrush);
-        environmentInput.Items.Add("Eau douce tropicale");
+        environmentInput.Items.Add("Eau douce");
         environmentInput.Items.Add("Eau de mer");
         environmentInput.SelectedIndex = source.Environment == AnimalReferenceEnvironment.Marine ? 1 : 0;
 
@@ -1849,10 +1851,10 @@ public partial class MainWindow : Window
     {
         var fr = new Dictionary<string, string>
         {
-            ["UiAppSubtitle"] = "Gestion des aquariums, parametres d'eau, plantes et population",
-            ["UiSectionAquariums"] = "Aquariums",
-            ["UiButtonNewAquarium"] = "Nouvel aquarium",
-            ["UiButtonDeleteAquarium"] = "Supprimer aquarium",
+            ["UiAppSubtitle"] = "Gestion des aquariums, bassins, parametres d'eau, plantes et population",
+            ["UiSectionAquariums"] = "Contenants",
+            ["UiButtonNewAquarium"] = "Nouveau contenant",
+            ["UiButtonDeleteAquarium"] = "Supprimer contenant",
             ["UiTabSheet"] = "Fiche",
             ["UiTabParameters"] = "Parametres",
             ["UiTabPlants"] = "Plantes",
@@ -1862,9 +1864,21 @@ public partial class MainWindow : Window
             ["UiTabSettings"] = "Parametrages",
             ["UiLabelName"] = "Nom",
             ["UiLabelVolume"] = "Volume (L)",
+            ["UiLabelContainerType"] = "Type de contenant",
+            ["UiContainerTypeAquarium"] = "Aquarium",
+            ["UiContainerTypeFishPond"] = "Bassin a poissons",
             ["UiLabelWaterType"] = "Type d'eau",
-            ["UiWaterTypeFreshwaterTropical"] = "Eau douce tropicale",
+            ["UiWaterTypeFreshwaterTropical"] = "Eau douce",
+            ["UiWaterTypeFreshwaterPond"] = "Eau douce de bassin",
             ["UiWaterTypeMarine"] = "Eau de mer",
+            ["UiPlantReferenceLabelUnknown"] = "Referentiel plantes - type inconnu",
+            ["UiPlantReferenceLabelFreshwater"] = "Referentiel plantes - Eau douce",
+            ["UiPlantReferenceLabelPond"] = "Referentiel plantes - Bassin a poissons",
+            ["UiPlantReferenceLabelMarine"] = "Referentiel plantes - Eau de mer",
+            ["UiAnimalReferenceLabelUnknown"] = "Referentiel population - type inconnu",
+            ["UiAnimalReferenceLabelFreshwater"] = "Referentiel population - Eau douce",
+            ["UiAnimalReferenceLabelPond"] = "Referentiel population - Bassin a poissons",
+            ["UiAnimalReferenceLabelMarine"] = "Referentiel population - Eau de mer",
             ["UiLabelStartedOn"] = "Mise en eau",
             ["UiLabelNotes"] = "Notes",
             ["UiLabelAmmonia"] = "Amoniac mg/L",
@@ -1886,6 +1900,7 @@ public partial class MainWindow : Window
             ["UiPlantCommonName"] = "Nom courant",
             ["UiPlantReferenceChoice"] = "Referentiel",
             ["UiPlantScientificName"] = "Nom scientifique",
+            ["UiPlantRefNoData"] = "Aucune plante de reference pour ce type de contenant.",
             ["UiPlantGrowth"] = "Croissance",
             ["UiGrowthSlow"] = "Lente",
             ["UiGrowthMedium"] = "Moyenne",
@@ -1948,6 +1963,7 @@ public partial class MainWindow : Window
             ["UiHealthParameters"] = "Parametres a afficher",
             ["UiHealthTargetRange"] = "Plage cible",
             ["UiHealthNoChartData"] = "Pas assez de mesures pour tracer un graphe.",
+            ["UiHealthNoData"] = "Aucune mesure disponible pour ce contenant.",
             ["UiLangFrench"] = "Francais",
             ["UiLangEnglish"] = "Anglais",
             ["UiLangGerman"] = "Allemand",
@@ -1970,15 +1986,15 @@ public partial class MainWindow : Window
             ["StatusConfigureBeforeInit"] = "Configure MySQL avant d'initialiser le schema.",
             ["StatusSchemaInitialized"] = "Schema MySQL initialise.",
             ["StatusInitializationFailed"] = "Initialisation MySQL impossible:",
-            ["StatusConnectedNoAquarium"] = "MySQL connecte. Aucun aquarium en base pour le moment.",
-            ["StatusConnectedAquariumCount"] = "MySQL connecte. {0} aquarium(s) charge(s).",
+            ["StatusConnectedNoAquarium"] = "MySQL connecte. Aucun contenant en base pour le moment.",
+            ["StatusConnectedAquariumCount"] = "MySQL connecte. {0} contenant(s) charge(s).",
             ["StatusLocalModeConfigure"] = "Mode local: configure MySQL pour sauvegarder en base.",
             ["StatusSaveInvalidInput"] = "Sauvegarde impossible: corrige les erreurs de saisie avant d'enregistrer.",
-            ["StatusAquariumSaved"] = "Aquarium sauvegarde dans MySQL.",
+            ["StatusAquariumSaved"] = "Contenant sauvegarde dans MySQL.",
             ["StatusSaveFailed"] = "Enregistrement MySQL impossible:",
-            ["StatusNewAquariumSaved"] = "Nouvel aquarium enregistre.",
-            ["StatusAquariumDeleted"] = "Aquarium supprime.",
-            ["StatusAquariumDeleteFailed"] = "Suppression de l'aquarium impossible:",
+            ["StatusNewAquariumSaved"] = "Nouveau contenant enregistre.",
+            ["StatusAquariumDeleted"] = "Contenant supprime.",
+            ["StatusAquariumDeleteFailed"] = "Suppression du contenant impossible:",
             ["StatusSelectMeasurementDelete"] = "Selectionne une mesure a supprimer.",
             ["StatusSelectMeasurementDuplicate"] = "Selectionne une mesure a dupliquer.",
             ["StatusMeasurementSaved"] = "Mesure d'eau enregistree.",
@@ -2015,24 +2031,24 @@ public partial class MainWindow : Window
             ["HealthActionCriticalTemperature"] = "Corriger la temperature (chauffage/refroidissement) sans variation brutale.",
             ["HealthActionCriticalGeneric"] = "Analyser l'eau et stabiliser les parametres critiques en priorite.",
             ["ConfirmDeleteTitle"] = "Confirmation de suppression",
-            ["ConfirmDeleteAquarium"] = "Supprimer l'aquarium \"{0}\" et toutes ses donnees associees ?",
+            ["ConfirmDeleteAquarium"] = "Supprimer le contenant \"{0}\" et toutes ses donnees associees ?",
             ["ConfirmDeleteMeasurement"] = "Supprimer la mesure du {0:g} ?",
             ["ConfirmDeletePlant"] = "Supprimer la plante \"{0}\" ?",
             ["ConfirmDeletePopulation"] = "Supprimer \"{0}\" de la population ?",
             ["ConfirmDeleteIntervention"] = "Supprimer l'intervention du {0:g} ?",
-            ["DefaultWaterType"] = "Eau douce tropicale",
+            ["DefaultWaterType"] = "Eau douce",
             ["DefaultMainAquarium"] = "Bac principal",
-            ["DefaultMainAquariumNote"] = "Premier aquarium ADAqua.",
+            ["DefaultMainAquariumNote"] = "Premier contenant ADAqua.",
             ["DefaultPlantLight"] = "Faible",
             ["DefaultNeonName"] = "Neon bleu"
         };
 
         var en = new Dictionary<string, string>(fr)
         {
-            ["UiAppSubtitle"] = "Manage aquariums, water parameters, plants and population",
-            ["UiSectionAquariums"] = "Aquariums",
-            ["UiButtonNewAquarium"] = "New aquarium",
-            ["UiButtonDeleteAquarium"] = "Delete aquarium",
+            ["UiAppSubtitle"] = "Manage aquariums, ponds, water parameters, plants and population",
+            ["UiSectionAquariums"] = "Containers",
+            ["UiButtonNewAquarium"] = "New container",
+            ["UiButtonDeleteAquarium"] = "Delete container",
             ["UiTabSheet"] = "Overview",
             ["UiTabParameters"] = "Parameters",
             ["UiTabPlants"] = "Plants",
@@ -2041,9 +2057,22 @@ public partial class MainWindow : Window
             ["UiTabInterventions"] = "Interventions",
             ["UiTabSettings"] = "Settings",
             ["UiLabelName"] = "Name",
+            ["UiLabelVolume"] = "Volume (L)",
+            ["UiLabelContainerType"] = "Container type",
+            ["UiContainerTypeAquarium"] = "Aquarium",
+            ["UiContainerTypeFishPond"] = "Fish pond",
             ["UiLabelWaterType"] = "Water type",
-            ["UiWaterTypeFreshwaterTropical"] = "Freshwater tropical",
+            ["UiWaterTypeFreshwaterTropical"] = "Freshwater",
+            ["UiWaterTypeFreshwaterPond"] = "Freshwater pond",
             ["UiWaterTypeMarine"] = "Marine",
+            ["UiPlantReferenceLabelUnknown"] = "Plant reference - unknown type",
+            ["UiPlantReferenceLabelFreshwater"] = "Plant reference - freshwater",
+            ["UiPlantReferenceLabelPond"] = "Plant reference - fish pond",
+            ["UiPlantReferenceLabelMarine"] = "Plant reference - marine",
+            ["UiAnimalReferenceLabelUnknown"] = "Population reference - unknown type",
+            ["UiAnimalReferenceLabelFreshwater"] = "Population reference - freshwater",
+            ["UiAnimalReferenceLabelPond"] = "Population reference - fish pond",
+            ["UiAnimalReferenceLabelMarine"] = "Population reference - marine",
             ["UiLabelStartedOn"] = "Start date",
             ["UiAddedOn"] = "Added on",
             ["UiInventoryMovement"] = "Movement",
@@ -2053,6 +2082,7 @@ public partial class MainWindow : Window
             ["UiPlantCommonName"] = "Common name",
             ["UiPlantReferenceChoice"] = "Reference catalog",
             ["UiPlantScientificName"] = "Scientific name",
+            ["UiPlantRefNoData"] = "No plant reference for this container type.",
             ["UiPlantGrowth"] = "Growth",
             ["UiGrowthSlow"] = "Slow",
             ["UiGrowthMedium"] = "Medium",
@@ -2118,6 +2148,7 @@ public partial class MainWindow : Window
             ["UiHealthParameters"] = "Parameters to display",
             ["UiHealthTargetRange"] = "Target range",
             ["UiHealthNoChartData"] = "Not enough measurements to draw a chart.",
+            ["UiHealthNoData"] = "No measurement available for this container.",
             ["UiLangFrench"] = "French",
             ["UiLangEnglish"] = "English",
             ["UiLangGerman"] = "German",
@@ -2140,15 +2171,15 @@ public partial class MainWindow : Window
             ["StatusConfigureBeforeInit"] = "Configure MySQL before initializing schema.",
             ["StatusSchemaInitialized"] = "MySQL schema initialized.",
             ["StatusInitializationFailed"] = "MySQL initialization failed:",
-            ["StatusConnectedNoAquarium"] = "MySQL connected. No aquariums in database yet.",
-            ["StatusConnectedAquariumCount"] = "MySQL connected. {0} aquarium(s) loaded.",
+            ["StatusConnectedNoAquarium"] = "MySQL connected. No containers in database yet.",
+            ["StatusConnectedAquariumCount"] = "MySQL connected. {0} container(s) loaded.",
             ["StatusLocalModeConfigure"] = "Local mode: configure MySQL to save to database.",
             ["StatusSaveInvalidInput"] = "Save failed: fix input errors before saving.",
-            ["StatusAquariumSaved"] = "Aquarium saved to MySQL.",
+            ["StatusAquariumSaved"] = "Container saved to MySQL.",
             ["StatusSaveFailed"] = "MySQL save failed:",
-            ["StatusNewAquariumSaved"] = "New aquarium saved.",
-            ["StatusAquariumDeleted"] = "Aquarium deleted.",
-            ["StatusAquariumDeleteFailed"] = "Aquarium deletion failed:",
+            ["StatusNewAquariumSaved"] = "New container saved.",
+            ["StatusAquariumDeleted"] = "Container deleted.",
+            ["StatusAquariumDeleteFailed"] = "Container deletion failed:",
             ["StatusSelectMeasurementDelete"] = "Select a measurement to delete.",
             ["StatusSelectMeasurementDuplicate"] = "Select a measurement to duplicate.",
             ["StatusMeasurementSaved"] = "Measurement saved.",
@@ -2185,14 +2216,14 @@ public partial class MainWindow : Window
             ["HealthActionCriticalTemperature"] = "Correct temperature (heating/cooling) without abrupt changes.",
             ["HealthActionCriticalGeneric"] = "Analyze water and stabilize critical parameters first.",
             ["ConfirmDeleteTitle"] = "Delete confirmation",
-            ["ConfirmDeleteAquarium"] = "Delete aquarium \"{0}\" and all related data?",
+            ["ConfirmDeleteAquarium"] = "Delete container \"{0}\" and all related data?",
             ["ConfirmDeleteMeasurement"] = "Delete measurement from {0:g}?",
             ["ConfirmDeletePlant"] = "Delete plant \"{0}\"?",
             ["ConfirmDeletePopulation"] = "Delete \"{0}\" from population?",
             ["ConfirmDeleteIntervention"] = "Delete intervention from {0:g}?",
-            ["DefaultWaterType"] = "Freshwater tropical",
+            ["DefaultWaterType"] = "Freshwater",
             ["DefaultMainAquarium"] = "Main tank",
-            ["DefaultMainAquariumNote"] = "First ADAqua aquarium.",
+            ["DefaultMainAquariumNote"] = "First ADAqua container.",
             ["DefaultPlantLight"] = "Low",
             ["DefaultNeonName"] = "Neon tetra"
         };
@@ -2200,9 +2231,10 @@ public partial class MainWindow : Window
         var de = new Dictionary<string, string>(fr)
         {
             ["UiAppSubtitle"] = "Verwaltung von Aquarien, Wasserwerten, Pflanzen und Besatz",
-            ["UiSectionAquariums"] = "Aquarien",
-            ["UiButtonNewAquarium"] = "Neues Aquarium",
-            ["UiButtonDeleteAquarium"] = "Aquarium loeschen",
+            ["UiAppSubtitle"] = "Aquarien, Teiche, Wasserparameter, Pflanzen und Besatz verwalten",
+            ["UiSectionAquariums"] = "Behaelter",
+            ["UiButtonNewAquarium"] = "Neuer Behaelter",
+            ["UiButtonDeleteAquarium"] = "Behaelter loeschen",
             ["UiTabSheet"] = "Uebersicht",
             ["UiTabParameters"] = "Parameter",
             ["UiTabPlants"] = "Pflanzen",
@@ -2211,9 +2243,22 @@ public partial class MainWindow : Window
             ["UiTabInterventions"] = "Eingriffe",
             ["UiTabSettings"] = "Einstellungen",
             ["UiLabelName"] = "Name",
+            ["UiLabelVolume"] = "Volumen (L)",
+            ["UiLabelContainerType"] = "Behaeltertyp",
+            ["UiContainerTypeAquarium"] = "Aquarium",
+            ["UiContainerTypeFishPond"] = "Fischteich",
             ["UiLabelWaterType"] = "Wassertyp",
-            ["UiWaterTypeFreshwaterTropical"] = "Tropisches Suesswasser",
+            ["UiWaterTypeFreshwaterTropical"] = "Suesswasser",
+            ["UiWaterTypeFreshwaterPond"] = "Teich-Suesswasser",
             ["UiWaterTypeMarine"] = "Meerwasser",
+            ["UiPlantReferenceLabelUnknown"] = "Pflanzenkatalog - unbekannter Typ",
+            ["UiPlantReferenceLabelFreshwater"] = "Pflanzenkatalog - Suesswasser",
+            ["UiPlantReferenceLabelPond"] = "Pflanzenkatalog - Fischteich",
+            ["UiPlantReferenceLabelMarine"] = "Pflanzenkatalog - Meerwasser",
+            ["UiAnimalReferenceLabelUnknown"] = "Besatzkatalog - unbekannter Typ",
+            ["UiAnimalReferenceLabelFreshwater"] = "Besatzkatalog - Suesswasser",
+            ["UiAnimalReferenceLabelPond"] = "Besatzkatalog - Fischteich",
+            ["UiAnimalReferenceLabelMarine"] = "Besatzkatalog - Meerwasser",
             ["UiLabelStartedOn"] = "Startdatum",
             ["UiAddedOn"] = "Hinzugefuegt am",
             ["UiInventoryMovement"] = "Bewegung",
@@ -2223,6 +2268,7 @@ public partial class MainWindow : Window
             ["UiPlantCommonName"] = "Trivialname",
             ["UiPlantReferenceChoice"] = "Pflanzenkatalog",
             ["UiPlantScientificName"] = "Wissenschaftlicher Name",
+            ["UiPlantRefNoData"] = "Keine Pflanzenreferenz fuer diesen Behaeltertyp.",
             ["UiPlantGrowth"] = "Wachstum",
             ["UiGrowthSlow"] = "Langsam",
             ["UiGrowthMedium"] = "Mittel",
@@ -2287,6 +2333,7 @@ public partial class MainWindow : Window
             ["UiHealthParameters"] = "Anzuzeigende Parameter",
             ["UiHealthTargetRange"] = "Zielbereich",
             ["UiHealthNoChartData"] = "Nicht genug Messungen fuer ein Diagramm.",
+            ["UiHealthNoData"] = "Keine Messung fuer diesen Behaelter verfuegbar.",
             ["UiLangFrench"] = "Franzoesisch",
             ["UiLangEnglish"] = "Englisch",
             ["UiLangGerman"] = "Deutsch",
@@ -2309,15 +2356,15 @@ public partial class MainWindow : Window
             ["StatusConfigureBeforeInit"] = "MySQL vor der Schema-Initialisierung konfigurieren.",
             ["StatusSchemaInitialized"] = "MySQL-Schema initialisiert.",
             ["StatusInitializationFailed"] = "MySQL-Initialisierung fehlgeschlagen:",
-            ["StatusConnectedNoAquarium"] = "MySQL verbunden. Noch keine Aquarien in der Datenbank.",
-            ["StatusConnectedAquariumCount"] = "MySQL verbunden. {0} Aquarium/Aquarien geladen.",
+            ["StatusConnectedNoAquarium"] = "MySQL verbunden. Noch keine Behaelter in der Datenbank.",
+            ["StatusConnectedAquariumCount"] = "MySQL verbunden. {0} Behaelter geladen.",
             ["StatusLocalModeConfigure"] = "Lokaler Modus: MySQL konfigurieren, um in die Datenbank zu speichern.",
             ["StatusSaveInvalidInput"] = "Speichern fehlgeschlagen: Eingabefehler zuerst korrigieren.",
-            ["StatusAquariumSaved"] = "Aquarium in MySQL gespeichert.",
+            ["StatusAquariumSaved"] = "Behaelter in MySQL gespeichert.",
             ["StatusSaveFailed"] = "MySQL-Speichern fehlgeschlagen:",
-            ["StatusNewAquariumSaved"] = "Neues Aquarium gespeichert.",
-            ["StatusAquariumDeleted"] = "Aquarium geloescht.",
-            ["StatusAquariumDeleteFailed"] = "Loeschen des Aquariums fehlgeschlagen:",
+            ["StatusNewAquariumSaved"] = "Neuer Behaelter gespeichert.",
+            ["StatusAquariumDeleted"] = "Behaelter geloescht.",
+            ["StatusAquariumDeleteFailed"] = "Loeschen des Behaelters fehlgeschlagen:",
             ["StatusSelectMeasurementDelete"] = "Waehle eine Messung zum Loeschen aus.",
             ["StatusSelectMeasurementDuplicate"] = "Waehle eine Messung zum Duplizieren aus.",
             ["StatusMeasurementSaved"] = "Messung gespeichert.",
@@ -2354,14 +2401,14 @@ public partial class MainWindow : Window
             ["HealthActionCriticalTemperature"] = "Temperatur (Heizen/Kuehlen) ohne abrupte Schwankung korrigieren.",
             ["HealthActionCriticalGeneric"] = "Wasser analysieren und kritische Parameter zuerst stabilisieren.",
             ["ConfirmDeleteTitle"] = "Loeschbestaetigung",
-            ["ConfirmDeleteAquarium"] = "Aquarium \"{0}\" und alle zugehoerigen Daten loeschen?",
+            ["ConfirmDeleteAquarium"] = "Behaelter \"{0}\" und alle zugehoerigen Daten loeschen?",
             ["ConfirmDeleteMeasurement"] = "Messung vom {0:g} loeschen?",
             ["ConfirmDeletePlant"] = "Pflanze \"{0}\" loeschen?",
             ["ConfirmDeletePopulation"] = "\"{0}\" aus dem Besatz loeschen?",
             ["ConfirmDeleteIntervention"] = "Eingriff vom {0:g} loeschen?",
-            ["DefaultWaterType"] = "Tropisches Suesswasser",
+            ["DefaultWaterType"] = "Suesswasser",
             ["DefaultMainAquarium"] = "Hauptbecken",
-            ["DefaultMainAquariumNote"] = "Erstes ADAqua-Aquarium.",
+            ["DefaultMainAquariumNote"] = "Erster ADAqua-Behaelter.",
             ["DefaultPlantLight"] = "Niedrig",
             ["DefaultNeonName"] = "Neonsalmler"
         };
@@ -2381,6 +2428,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     private const string WaterTypeFreshwaterTropical = "FreshwaterTropical";
     private const string WaterTypeMarine = "Marine";
+    private const string ContainerTypeAquarium = "Aquarium";
+    private const string ContainerTypeFishPond = "FishPond";
 
     private Func<string, string> text = key => key;
     private string currentLanguage = "fr";
@@ -2404,6 +2453,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         new("GH", m => m.Gh, 6m, 8m, 20m, 30m),
         new("KH", m => m.Kh, 5m, 7m, 12m, 14m),
         new("Temperature", m => m.TemperatureCelsius, 22m, 24m, 27m, 30m)
+    ];
+
+    private static readonly HealthRule[] PondHealthRules =
+    [
+        new("Amoniac", m => m.AmmoniaMgPerLiter, 0m, 0m, 0.05m, 0.2m),
+        new("Nitrites", m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
+        new("Nitrates", m => m.NitratesMgPerLiter, 0m, 0m, 40m, 80m),
+        new("pH", m => m.Ph, 6.5m, 7m, 8.5m, 9m),
+        new("GH", m => m.Gh, 1m, 6m, 18m, 25m),
+        new("KH", m => m.Kh, 3m, 5m, 14m, 18m),
+        new("Temperature", m => m.TemperatureCelsius, 4m, 10m, 26m, 32m)
     ];
 
     private Aquarium selectedAquarium;
@@ -2453,6 +2513,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel()
     {
         InitializeTrendParameterOptions();
+        UpdateContainerTypeOptions();
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
         selectedAquarium = CreateDefaultAquarium();
@@ -2466,6 +2527,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler? SelectedAquariumWaterTypeChanged;
+    public event EventHandler? SelectedAquariumContainerTypeChanged;
 
     public ObservableCollection<Aquarium> Aquariums { get; } = [];
     public WaterParameters NewMeasurement { get; private set; } = new();
@@ -2482,6 +2544,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ObservableCollection<AnimalReferenceItem> AnimalReferencesFiltered { get; } = [];
     public ObservableCollection<PlantInventoryTotal> PlantInventoryTotals { get; } = [];
     public ObservableCollection<PopulationInventoryTotal> PopulationInventoryTotals { get; } = [];
+    public ObservableCollection<ContainerTypeOption> ContainerTypeOptions { get; } = [];
     public ObservableCollection<WaterTypeOption> WaterTypeOptions { get; } = [];
     public ObservableCollection<InterventionTypeOption> InterventionTypeOptions { get; } = [];
     public int InterventionLocalizationVersion => interventionLocalizationVersion;
@@ -2498,6 +2561,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
 
             value.WaterType = NormalizeWaterTypeCode(value.WaterType);
+            value.ContainerType = NormalizeContainerTypeCode(value.ContainerType);
+            if (IsFishPondContainerType(value.ContainerType))
+            {
+                value.WaterType = WaterTypeFreshwaterTropical;
+            }
+
             if (SetField(ref selectedAquarium, value))
             {
                 SelectedMeasurement = null;
@@ -2507,8 +2576,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 SelectedPlantReferenceForNewPlant = null;
                 SelectedAnimalReferenceForNewPopulation = null;
                 OnPropertyChanged(nameof(StartedOnDateTime));
+                UpdateWaterTypeOptions();
+                OnPropertyChanged(nameof(SelectedAquariumContainerType));
                 OnPropertyChanged(nameof(SelectedAquariumWaterType));
                 OnPropertyChanged(nameof(IsSelectedAquariumMarine));
+                OnPropertyChanged(nameof(IsSelectedContainerFishPond));
                 RebuildHealthDashboard();
                 RebuildInventoryTotals();
                 RebuildPlantReference();
@@ -2577,6 +2649,44 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         set => SetField(ref selectedAnimalReference, value);
     }
 
+    public string SelectedAquariumContainerType
+    {
+        get => NormalizeContainerTypeCode(SelectedAquarium.ContainerType);
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                OnPropertyChanged();
+                return;
+            }
+
+            var normalized = NormalizeContainerTypeCode(value);
+            if (SelectedAquarium.ContainerType == normalized)
+            {
+                OnPropertyChanged();
+                return;
+            }
+
+            SelectedAquarium.ContainerType = normalized;
+            if (IsFishPondContainerType(normalized))
+            {
+                SelectedAquarium.WaterType = WaterTypeFreshwaterTropical;
+            }
+
+            UpdateWaterTypeOptions();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedAquariumWaterType));
+            OnPropertyChanged(nameof(SelectedAquarium));
+            OnPropertyChanged(nameof(IsSelectedAquariumMarine));
+            OnPropertyChanged(nameof(IsSelectedContainerFishPond));
+            RebuildHealthDashboard();
+            RebuildPlantReferenceChoices();
+            RebuildPlantReference();
+            RebuildAnimalReference();
+            SelectedAquariumContainerTypeChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     public string SelectedAquariumWaterType
     {
         get => NormalizeWaterTypeCode(SelectedAquarium.WaterType);
@@ -2589,6 +2699,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
 
             var normalized = NormalizeWaterTypeCode(value);
+            if (IsSelectedContainerFishPond)
+            {
+                normalized = WaterTypeFreshwaterTropical;
+            }
+
             if (SelectedAquarium.WaterType == normalized)
             {
                 OnPropertyChanged();
@@ -2618,6 +2733,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     }
 
     public bool IsSelectedAquariumMarine => IsMarineWaterType(SelectedAquarium.WaterType);
+    public bool IsSelectedContainerFishPond => IsFishPondContainerType(SelectedAquarium.ContainerType);
 
     public string StatusMessage
     {
@@ -2866,6 +2982,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public void SetTextProvider(Func<string, string> provider)
     {
         text = provider;
+        UpdateContainerTypeOptions();
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
         UpdateMovementLocalization();
@@ -2879,6 +2996,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public void SetLanguage(string languageCode)
     {
         currentLanguage = languageCode is "en" or "de" ? languageCode : "fr";
+        UpdateContainerTypeOptions();
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
         foreach (var item in plantReferenceCatalog)
@@ -2915,11 +3033,27 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         RebuildInventoryTotals();
     }
 
+    private void UpdateContainerTypeOptions()
+    {
+        ContainerTypeOptions.Clear();
+        ContainerTypeOptions.Add(new ContainerTypeOption(ContainerTypeAquarium, text("UiContainerTypeAquarium")));
+        ContainerTypeOptions.Add(new ContainerTypeOption(ContainerTypeFishPond, text("UiContainerTypeFishPond")));
+        OnPropertyChanged(nameof(ContainerTypeOptions));
+        OnPropertyChanged(nameof(SelectedAquariumContainerType));
+    }
+
     private void UpdateWaterTypeOptions()
     {
         WaterTypeOptions.Clear();
-        WaterTypeOptions.Add(new WaterTypeOption(WaterTypeFreshwaterTropical, text("UiWaterTypeFreshwaterTropical")));
-        WaterTypeOptions.Add(new WaterTypeOption(WaterTypeMarine, text("UiWaterTypeMarine")));
+        var isPond = selectedAquarium is not null && IsFishPondContainerType(selectedAquarium.ContainerType);
+        WaterTypeOptions.Add(new WaterTypeOption(
+            WaterTypeFreshwaterTropical,
+            isPond ? text("UiWaterTypeFreshwaterPond") : text("UiWaterTypeFreshwaterTropical")));
+        if (!isPond)
+        {
+            WaterTypeOptions.Add(new WaterTypeOption(WaterTypeMarine, text("UiWaterTypeMarine")));
+        }
+
         OnPropertyChanged(nameof(WaterTypeOptions));
         OnPropertyChanged(nameof(SelectedAquariumWaterType));
     }
@@ -2947,8 +3081,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public void NotifyLanguageChanged()
     {
-        NormalizeAllAquariumWaterTypes();
+        NormalizeAllAquariumClassifications();
 
+        UpdateContainerTypeOptions();
+        UpdateWaterTypeOptions();
         RebuildHealthDashboard();
         RebuildInventoryTotals();
         OnPropertyChanged(nameof(SelectedAquarium));
@@ -2957,11 +3093,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         RebuildAnimalReference();
     }
 
-    private void NormalizeAllAquariumWaterTypes()
+    private void NormalizeAllAquariumClassifications()
     {
         foreach (var aquarium in Aquariums)
         {
-            aquarium.WaterType = NormalizeWaterTypeCode(aquarium.WaterType);
+            NormalizeAquariumClassification(aquarium);
         }
     }
 
@@ -2971,6 +3107,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             Name = $"Aquarium {Aquariums.Count + 1}",
             VolumeLiters = 60,
+            ContainerType = ContainerTypeAquarium,
             WaterType = WaterTypeFreshwaterTropical
         };
 
@@ -3006,7 +3143,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Aquariums.Clear();
         foreach (var aquarium in aquariums)
         {
-            aquarium.WaterType = NormalizeWaterTypeCode(aquarium.WaterType);
+            NormalizeAquariumClassification(aquarium);
             SortMeasurementsDescending(aquarium);
             SortInterventionsDescending(aquarium);
             NormalizeInventoryEntries(aquarium);
@@ -3032,6 +3169,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         var aquarium = Aquariums.FirstOrDefault(candidate => candidate.Id == aquariumId);
         if (aquarium is not null)
         {
+            NormalizeAquariumClassification(aquarium);
             SortMeasurementsDescending(aquarium);
             SortInterventionsDescending(aquarium);
             NormalizeInventoryEntries(aquarium);
@@ -3553,6 +3691,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             Name = text("DefaultMainAquarium"),
             VolumeLiters = 120,
+            ContainerType = ContainerTypeAquarium,
             WaterType = WaterTypeFreshwaterTropical,
             Notes = text("DefaultMainAquariumNote")
         };
@@ -3598,7 +3737,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         var ordered = aquarium.Measurements.OrderByDescending(m => m.MeasuredAt).ToList();
         var latest = ordered[0];
         var previous = ordered.Count > 1 ? ordered[1] : null;
-        var healthRules = GetHealthRulesForWaterType(aquarium.WaterType);
+        var healthRules = GetHealthRulesForAquarium(aquarium);
         HealthLastMeasurementAt = latest.MeasuredAt.ToString("g", CultureInfo.CurrentCulture);
 
         var hasCritical = false;
@@ -3626,14 +3765,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         if (hasCritical)
         {
             HealthGlobalStatus = text("HealthStatusCritical");
-            AddActionsForCritical(latest, aquarium.WaterType);
+            AddActionsForCritical(latest, aquarium);
             return;
         }
 
         if (hasWarning)
         {
             HealthGlobalStatus = text("HealthStatusWarning");
-            AddActionsForWarning(latest);
+            AddActionsForWarning(latest, aquarium);
             return;
         }
 
@@ -3794,14 +3933,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         RebuildPlantReferenceChoices();
         if (selectedAquarium is null)
         {
-            PlantReferenceEnvironmentLabel = "Referentiel plantes - type inconnu";
+            PlantReferenceEnvironmentLabel = text("UiPlantReferenceLabelUnknown");
             return;
         }
 
         var environment = ResolveEnvironmentType(selectedAquarium.WaterType);
-        PlantReferenceEnvironmentLabel = environment == PlantReferenceEnvironment.Marine
-            ? "Referentiel plantes - Eau de mer"
-            : "Referentiel plantes - Eau douce tropicale";
+        PlantReferenceEnvironmentLabel = BuildPlantReferenceEnvironmentLabel(selectedAquarium, environment);
 
         foreach (var item in plantReferenceCatalog
             .Where(item => item.Environment == environment)
@@ -3864,14 +4001,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         RebuildAnimalReferenceChoices();
         if (selectedAquarium is null)
         {
-            AnimalReferenceEnvironmentLabel = "Referentiel population - type inconnu";
+            AnimalReferenceEnvironmentLabel = text("UiAnimalReferenceLabelUnknown");
             return;
         }
 
         var environment = ResolveAnimalEnvironmentType(selectedAquarium.WaterType);
-        AnimalReferenceEnvironmentLabel = environment == AnimalReferenceEnvironment.Marine
-            ? "Referentiel population - Eau de mer"
-            : "Referentiel population - Eau douce tropicale";
+        AnimalReferenceEnvironmentLabel = BuildAnimalReferenceEnvironmentLabel(selectedAquarium, environment);
 
         foreach (var item in animalReferenceCatalog
             .Where(item => item.Environment == environment)
@@ -3984,6 +4119,30 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return decimal.TryParse(normalized, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out value);
     }
 
+    private string BuildPlantReferenceEnvironmentLabel(Aquarium aquarium, PlantReferenceEnvironment environment)
+    {
+        if (IsFishPondContainerType(aquarium.ContainerType))
+        {
+            return text("UiPlantReferenceLabelPond");
+        }
+
+        return environment == PlantReferenceEnvironment.Marine
+            ? text("UiPlantReferenceLabelMarine")
+            : text("UiPlantReferenceLabelFreshwater");
+    }
+
+    private string BuildAnimalReferenceEnvironmentLabel(Aquarium aquarium, AnimalReferenceEnvironment environment)
+    {
+        if (IsFishPondContainerType(aquarium.ContainerType))
+        {
+            return text("UiAnimalReferenceLabelPond");
+        }
+
+        return environment == AnimalReferenceEnvironment.Marine
+            ? text("UiAnimalReferenceLabelMarine")
+            : text("UiAnimalReferenceLabelFreshwater");
+    }
+
     private static PlantReferenceEnvironment ResolveEnvironmentType(string? waterType)
     {
         return IsMarineWaterType(waterType)
@@ -4001,6 +4160,40 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private static bool IsMarineWaterType(string? waterType)
     {
         return NormalizeWaterTypeCode(waterType) == WaterTypeMarine;
+    }
+
+    private static bool IsFishPondContainerType(string? containerType)
+    {
+        return NormalizeContainerTypeCode(containerType) == ContainerTypeFishPond;
+    }
+
+    private static void NormalizeAquariumClassification(Aquarium aquarium)
+    {
+        aquarium.ContainerType = NormalizeContainerTypeCode(aquarium.ContainerType);
+        aquarium.WaterType = NormalizeWaterTypeCode(aquarium.WaterType);
+        if (IsFishPondContainerType(aquarium.ContainerType))
+        {
+            aquarium.WaterType = WaterTypeFreshwaterTropical;
+        }
+    }
+
+    private static string NormalizeContainerTypeCode(string? containerType)
+    {
+        if (string.IsNullOrWhiteSpace(containerType))
+        {
+            return ContainerTypeAquarium;
+        }
+
+        var normalized = containerType.Trim().ToLowerInvariant();
+        if (string.Equals(normalized, ContainerTypeFishPond.ToLowerInvariant(), StringComparison.Ordinal)
+            || normalized.Contains("bassin", StringComparison.Ordinal)
+            || normalized.Contains("pond", StringComparison.Ordinal)
+            || normalized.Contains("teich", StringComparison.Ordinal))
+        {
+            return ContainerTypeFishPond;
+        }
+
+        return ContainerTypeAquarium;
     }
 
     private static string NormalizeWaterTypeCode(string? waterType)
@@ -4099,9 +4292,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return text("HealthAlertOk");
     }
 
-    private static IReadOnlyList<HealthRule> GetHealthRulesForWaterType(string? waterType)
+    private static IReadOnlyList<HealthRule> GetHealthRulesForAquarium(Aquarium aquarium)
     {
-        return IsMarineWaterType(waterType)
+        if (IsFishPondContainerType(aquarium.ContainerType))
+        {
+            return PondHealthRules;
+        }
+
+        return IsMarineWaterType(aquarium.WaterType)
             ? MarineHealthRules
             : FreshwaterHealthRules;
     }
@@ -4111,9 +4309,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return $"{rule.WarningMin:0.###} - {rule.WarningMax:0.###}";
     }
 
-    private void AddActionsForCritical(WaterParameters latest, string? waterType)
+    private void AddActionsForCritical(WaterParameters latest, Aquarium aquarium)
     {
-        var ammoniaCritical = IsMarineWaterType(waterType) ? 0.1m : 0.2m;
+        var ammoniaCritical = IsMarineWaterType(aquarium.WaterType) ? 0.1m : 0.2m;
         var nitritesCritical = 0.1m;
         if ((latest.AmmoniaMgPerLiter ?? 0m) > ammoniaCritical || (latest.NitritesMgPerLiter ?? 0m) > nitritesCritical)
         {
@@ -4121,8 +4319,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             HealthRecommendedActions.Add(text("HealthActionCriticalFeeding"));
         }
 
-        var minTemperature = IsMarineWaterType(waterType) ? 22m : 18m;
-        if ((latest.TemperatureCelsius ?? 24m) < minTemperature || (latest.TemperatureCelsius ?? 24m) > 30m)
+        var isPond = IsFishPondContainerType(aquarium.ContainerType);
+        var minTemperature = isPond ? 4m : IsMarineWaterType(aquarium.WaterType) ? 22m : 18m;
+        var maxTemperature = isPond ? 32m : 30m;
+        if ((latest.TemperatureCelsius ?? 24m) < minTemperature || (latest.TemperatureCelsius ?? 24m) > maxTemperature)
         {
             HealthRecommendedActions.Add(text("HealthActionCriticalTemperature"));
         }
@@ -4133,19 +4333,28 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private void AddActionsForWarning(WaterParameters latest)
+    private void AddActionsForWarning(WaterParameters latest, Aquarium aquarium)
     {
-        if ((latest.NitratesMgPerLiter ?? 0m) > 25m)
+        var rules = GetHealthRulesForAquarium(aquarium);
+        var nitratesRule = rules.First(rule => rule.Name == "Nitrates");
+        var phRule = rules.First(rule => rule.Name == "pH");
+        var ghRule = rules.First(rule => rule.Name == "GH");
+        var khRule = rules.First(rule => rule.Name == "KH");
+
+        if ((latest.NitratesMgPerLiter ?? 0m) > nitratesRule.WarningMax)
         {
             HealthRecommendedActions.Add(text("HealthActionWarningNitrates"));
         }
 
-        if ((latest.Ph ?? 7m) < 6.5m || (latest.Ph ?? 7m) > 7.8m)
+        if ((latest.Ph ?? 7m) < phRule.WarningMin || (latest.Ph ?? 7m) > phRule.WarningMax)
         {
             HealthRecommendedActions.Add(text("HealthActionWarningPh"));
         }
 
-        if ((latest.Gh ?? 8m) < 4m || (latest.Gh ?? 8m) > 12m || (latest.Kh ?? 5m) < 3m || (latest.Kh ?? 5m) > 10m)
+        if ((latest.Gh ?? 8m) < ghRule.WarningMin
+            || (latest.Gh ?? 8m) > ghRule.WarningMax
+            || (latest.Kh ?? 5m) < khRule.WarningMin
+            || (latest.Kh ?? 5m) > khRule.WarningMax)
         {
             HealthRecommendedActions.Add(text("HealthActionWarningHardness"));
         }
@@ -4175,6 +4384,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 }
 
 public sealed record WaterTypeOption(string Code, string Label);
+public sealed record ContainerTypeOption(string Code, string Label);
 public sealed record InterventionTypeOption(InterventionType Type, string Label);
 public sealed record HealthIndicator(string Name, string LatestDisplay, string TargetRange, string Trend, string Alert);
 public sealed record PlantInventoryTotal(string CommonName, string ScientificName, int Quantity);
@@ -4318,7 +4528,7 @@ public sealed class PlantReferenceItem : INotifyPropertyChanged
         }
     }
 
-    public string EnvironmentLabel => Environment == PlantReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce tropicale";
+    public string EnvironmentLabel => Environment == PlantReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce";
 
     public string LocalizedCommonName => currentLanguage switch
     {
@@ -4510,7 +4720,7 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
         }
     }
 
-    public string EnvironmentLabel => Environment == AnimalReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce tropicale";
+    public string EnvironmentLabel => Environment == AnimalReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce";
 
     public string LocalizedCommonName => currentLanguage switch
     {

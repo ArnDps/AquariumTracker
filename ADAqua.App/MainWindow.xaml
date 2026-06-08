@@ -25,10 +25,10 @@
         <SolidColorBrush x:Key="DatePickerTextBrush" Color="#172326" />
         <SolidColorBrush x:Key="TabHeaderBackgroundBrush" Color="#E7EFF0" />
         <SolidColorBrush x:Key="TabHeaderSelectedBackgroundBrush" Color="#D5E4E6" />
-        <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, parametres d'eau, plantes et population</sys:String>
-        <sys:String x:Key="UiSectionAquariums">Aquariums</sys:String>
-        <sys:String x:Key="UiButtonNewAquarium">Nouvel aquarium</sys:String>
-        <sys:String x:Key="UiButtonDeleteAquarium">Supprimer aquarium</sys:String>
+        <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, bassins, parametres d'eau, plantes et population</sys:String>
+        <sys:String x:Key="UiSectionAquariums">Contenants</sys:String>
+        <sys:String x:Key="UiButtonNewAquarium">Nouveau contenant</sys:String>
+        <sys:String x:Key="UiButtonDeleteAquarium">Supprimer contenant</sys:String>
         <sys:String x:Key="UiTabSheet">Fiche</sys:String>
         <sys:String x:Key="UiTabParameters">Parametres</sys:String>
         <sys:String x:Key="UiTabHealth">Santé</sys:String>
@@ -39,8 +39,12 @@
         <sys:String x:Key="UiTabSettings">Parametrages</sys:String>
         <sys:String x:Key="UiLabelName">Nom</sys:String>
         <sys:String x:Key="UiLabelVolume">Volume (L)</sys:String>
+        <sys:String x:Key="UiLabelContainerType">Type de contenant</sys:String>
+        <sys:String x:Key="UiContainerTypeAquarium">Aquarium</sys:String>
+        <sys:String x:Key="UiContainerTypeFishPond">Bassin a poissons</sys:String>
         <sys:String x:Key="UiLabelWaterType">Type d'eau</sys:String>
-        <sys:String x:Key="UiWaterTypeFreshwaterTropical">Eau douce tropicale</sys:String>
+        <sys:String x:Key="UiWaterTypeFreshwaterTropical">Eau douce</sys:String>
+        <sys:String x:Key="UiWaterTypeFreshwaterPond">Eau douce de bassin</sys:String>
         <sys:String x:Key="UiWaterTypeMarine">Eau de mer</sys:String>
         <sys:String x:Key="UiLabelStartedOn">Mise en eau</sys:String>
         <sys:String x:Key="UiLabelNotes">Notes</sys:String>
@@ -94,7 +98,7 @@
         <sys:String x:Key="UiPlantRefBehavior">Comportement</sys:String>
         <sys:String x:Key="UiPlantRefCompatibility">Compatibilites</sys:String>
         <sys:String x:Key="UiPlantRefSourceUrl">Source URL</sys:String>
-        <sys:String x:Key="UiPlantRefNoData">Aucune plante de reference pour ce type d'aquarium.</sys:String>
+        <sys:String x:Key="UiPlantRefNoData">Aucune plante de reference pour ce type de contenant.</sys:String>
         <sys:String x:Key="UiPlantRefSearchMore">Recherches complementaires</sys:String>
         <sys:String x:Key="UiPlantRefCheckCompatibility">Verifier compatibilite</sys:String>
         <sys:String x:Key="UiPlantRefApplyFilters">Appliquer filtres</sys:String>
@@ -161,7 +165,7 @@
         <sys:String x:Key="UiHealthTargetRange">Plage cible</sys:String>
         <sys:String x:Key="UiHealthNoChartData">Pas assez de mesures pour tracer un graphe.</sys:String>
         <sys:String x:Key="UiHealthActions">Actions conseillees</sys:String>
-        <sys:String x:Key="UiHealthNoData">Aucune mesure disponible pour cet aquarium.</sys:String>
+        <sys:String x:Key="UiHealthNoData">Aucune mesure disponible pour ce contenant.</sys:String>
         <sys:String x:Key="UiLangFrench">Francais</sys:String>
         <sys:String x:Key="UiLangEnglish">Anglais</sys:String>
         <sys:String x:Key="UiLangGerman">Allemand</sys:String>
@@ -497,6 +501,7 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
                                 <StackPanel Grid.Column="0">
@@ -508,6 +513,15 @@
                                     <TextBox Text="{Binding SelectedAquarium.VolumeLiters, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="0">
+                                    <TextBlock Text="{DynamicResource UiLabelContainerType}" />
+                                    <ComboBox ItemsSource="{Binding ContainerTypeOptions}"
+                                              DisplayMemberPath="Label"
+                                              SelectedValuePath="Code"
+                                              SelectedValue="{Binding SelectedAquariumContainerType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              Margin="0,4,12,12"
+                                              MinHeight="34" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1">
                                     <TextBlock Text="{DynamicResource UiLabelWaterType}" />
                                     <ComboBox ItemsSource="{Binding WaterTypeOptions}"
                                               DisplayMemberPath="Label"
@@ -516,11 +530,11 @@
                                               Margin="0,4,12,12"
                                               MinHeight="34" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="1">
+                                <StackPanel Grid.Row="2" Grid.Column="0">
                                     <TextBlock Text="{DynamicResource UiLabelStartedOn}" />
                                     <DatePicker SelectedDate="{Binding StartedOnDateTime}" Margin="0,4,12,12" MinHeight="34" VerticalContentAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
+                                <StackPanel Grid.Row="3" Grid.ColumnSpan="2">
                                     <TextBlock Text="{DynamicResource UiLabelNotes}" />
                                     <TextBox Text="{Binding SelectedAquarium.Notes, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LongTextBoxStyle}" />
                                 </StackPanel>

@@ -54,11 +54,12 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             connection,
             transaction,
             """
-            INSERT INTO Aquariums (Id, Name, VolumeLiters, WaterType, StartedOn, Notes)
-            VALUES (@Id, @Name, @VolumeLiters, @WaterType, @StartedOn, @Notes)
+            INSERT INTO Aquariums (Id, Name, VolumeLiters, ContainerType, WaterType, StartedOn, Notes)
+            VALUES (@Id, @Name, @VolumeLiters, @ContainerType, @WaterType, @StartedOn, @Notes)
             ON DUPLICATE KEY UPDATE
                 Name = VALUES(Name),
                 VolumeLiters = VALUES(VolumeLiters),
+                ContainerType = VALUES(ContainerType),
                 WaterType = VALUES(WaterType),
                 StartedOn = VALUES(StartedOn),
                 Notes = VALUES(Notes);
@@ -67,6 +68,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             Parameter("@Id", aquarium.Id.ToString()),
             Parameter("@Name", aquarium.Name),
             Parameter("@VolumeLiters", aquarium.VolumeLiters),
+            Parameter("@ContainerType", aquarium.ContainerType),
             Parameter("@WaterType", aquarium.WaterType),
             Parameter("@StartedOn", aquarium.StartedOn.ToDateTime(TimeOnly.MinValue)),
             Parameter("@Notes", aquarium.Notes));
@@ -223,7 +225,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
     private static async Task LoadAquariumsAsync(MySqlConnection connection, Dictionary<Guid, Aquarium> aquariums, CancellationToken cancellationToken)
     {
-        await using var command = new MySqlCommand("SELECT Id, Name, VolumeLiters, WaterType, StartedOn, Notes FROM Aquariums;", connection);
+        await using var command = new MySqlCommand("SELECT Id, Name, VolumeLiters, ContainerType, WaterType, StartedOn, Notes FROM Aquariums;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken))
@@ -233,9 +235,10 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Id = ReadGuid(reader, 0),
                 Name = reader.GetString(1),
                 VolumeLiters = reader.GetDecimal(2),
-                WaterType = reader.GetString(3),
-                StartedOn = DateOnly.FromDateTime(reader.GetDateTime(4)),
-                Notes = reader.GetString(5)
+                ContainerType = reader.GetString(3),
+                WaterType = reader.GetString(4),
+                StartedOn = DateOnly.FromDateTime(reader.GetDateTime(5)),
+                Notes = reader.GetString(6)
             };
 
             aquariums[aquarium.Id] = aquarium;
@@ -691,6 +694,9 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     {
         var alterStatements = new[]
         {
+            "ALTER TABLE Aquariums ADD COLUMN ContainerType VARCHAR(40) NULL AFTER VolumeLiters;",
+            "UPDATE Aquariums SET ContainerType = 'Aquarium' WHERE ContainerType IS NULL OR ContainerType = '';",
+            "ALTER TABLE Aquariums MODIFY ContainerType VARCHAR(40) NOT NULL;",
             "ALTER TABLE AquariumPlants ADD COLUMN AddedOn DATE NULL AFTER AquariumId;",
             "UPDATE AquariumPlants SET AddedOn = CURRENT_DATE WHERE AddedOn IS NULL;",
             "ALTER TABLE AquariumPlants MODIFY AddedOn DATE NOT NULL;",

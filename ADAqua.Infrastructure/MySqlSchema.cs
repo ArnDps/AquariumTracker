@@ -9,6 +9,7 @@ public static class MySqlSchema
             Id CHAR(36) NOT NULL PRIMARY KEY,
             Name VARCHAR(120) NOT NULL,
             VolumeLiters DECIMAL(8,2) NOT NULL,
+            ContainerType VARCHAR(40) NOT NULL,
             WaterType VARCHAR(80) NOT NULL,
             StartedOn DATE NOT NULL,
             Notes TEXT NOT NULL

@@ -74,13 +74,13 @@
 - [x] AQ37 - P2 - Dater les ajouts de population : ajouter une date d'ajout visible et modifiable dans l'onglet Population, initialisee a la date du jour par defaut, affichee dans le tableau avec un entete de colonne visible en themes clair/sombre, triable ascendant/descendant au clic sur l'entete, et persistee en base MySQL avec migration automatique des donnees existantes. (traite: 2026-06-07)
 - [x] AQ79 - P2 - Permettre le retrait de plantes dans l'onglet Plantes : historiser les ajouts et les retraits via une colonne `Mouvement`, saisir une quantite de plantes, conserver le tableau principal editable trie par date croissante a l'initialisation et apres edition, ajouter sous ce tableau une synthese non modifiable consolidant le total de plantes par espece, et persister les mouvements en base MySQL avec migration automatique des donnees existantes. (traite: 2026-06-08)
 - [x] AQ80 - P2 - Permettre le retrait de population dans l'onglet Population : historiser les ajouts et les retraits via une colonne `Mouvement`, conserver le tableau principal editable trie par date croissante a l'initialisation et apres edition, ajouter sous ce tableau une synthese non modifiable consolidant le total d'animaux par espece et par famille (poissons, crevettes, mollusques, autres), et persister les mouvements en base MySQL avec migration automatique des donnees existantes. (traite: 2026-06-08)
+- [x] AQ78 - P2 - Creer et gerer un nouveau type de contenant distinct d'un aquarium : `bassin a poissons`; adapter la fiche avec un champ `Type de contenant`, les parametres, les interventions, les referentiels compatibles et les libelles afin que l'application puisse differencier clairement aquarium et bassin a poissons; afficher le type d'environnement des referentiels en `Eau douce` plutot qu'en `Eau douce tropicale`. (traite: 2026-06-08)
 
 ## A valider
 
 ## A faire
 
 - [ ] AQ20 - P2 - Ajouter une couche de resilience locale : file d'attente ou cache local lorsque MySQL est indisponible, synchronisation au retour de la connexion. (creation: 2026-05-17)
-- [ ] AQ78 - P2 - Creer et gerer un nouveau type de contenant distinct d'un aquarium : `bassin a poissons`; adapter la fiche, les parametres, les interventions, les referentiels compatibles et les libelles afin que l'application puisse differencier clairement aquarium et bassin a poissons. (creation: 2026-06-07)
 - [ ] AQ22 - P3 - Ameliorer l'ergonomie WPF : edition en ligne, filtres, recherche, meilleure densite d'affichage et raccourcis de saisie. (creation: 2026-05-17)
 - [ ] AQ23 - P3 - Ajouter une section `Apparence` : theme clair/sombre, taille de police, densite compacte/confortable et couleur d'accentuation. (creation: 2026-05-17)
 - [ ] AQ24 - P3 - Etudier l'import/export CSV ou Excel des mesures d'eau pour faciliter la reprise de donnees existantes. (creation: 2026-05-17)

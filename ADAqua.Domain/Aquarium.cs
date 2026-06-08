@@ -7,6 +7,7 @@ public sealed class Aquarium
     public Guid Id { get; init; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;
     public decimal VolumeLiters { get; set; }
+    public string ContainerType { get; set; } = "Aquarium";
     public string WaterType { get; set; } = "Eau douce";
     public DateOnly StartedOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     public string Notes { get; set; } = string.Empty;
