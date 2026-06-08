@@ -4,6 +4,7 @@ public sealed class PopulationMember
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public DateTime AddedOn { get; set; } = DateTime.Today;
+    public InventoryMovementType MovementType { get; set; } = InventoryMovementType.Addition;
     public string SpeciesName { get; set; } = string.Empty;
     public string CommonName { get; set; } = string.Empty;
     public PopulationType Type { get; set; } = PopulationType.Fish;

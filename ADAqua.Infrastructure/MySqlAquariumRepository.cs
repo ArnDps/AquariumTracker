@@ -267,7 +267,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
     private static async Task LoadPlantsAsync(MySqlConnection connection, Dictionary<Guid, Aquarium> aquariums, CancellationToken cancellationToken)
     {
-        await using var command = new MySqlCommand("SELECT Id, AquariumId, AddedOn, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes FROM AquariumPlants;", connection);
+        await using var command = new MySqlCommand("SELECT Id, AquariumId, AddedOn, MovementType, Quantity, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes FROM AquariumPlants ORDER BY AquariumId, AddedOn ASC, CommonName ASC, ScientificName ASC;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
@@ -276,18 +276,20 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             {
                 Id = ReadGuid(reader, 0),
                 AddedOn = reader.GetDateTime(2).Date,
-                CommonName = reader.GetString(3),
-                ScientificName = reader.GetString(4),
-                GrowthSpeed = Enum.Parse<PlantGrowthSpeed>(reader.GetString(5)),
-                LightNeed = reader.GetString(6),
-                Notes = reader.GetString(7)
+                MovementType = ParseEnumOrDefault(reader.GetString(3), InventoryMovementType.Addition),
+                Quantity = NormalizeInventoryQuantity(reader.GetInt32(4)),
+                CommonName = reader.GetString(5),
+                ScientificName = reader.GetString(6),
+                GrowthSpeed = Enum.Parse<PlantGrowthSpeed>(reader.GetString(7)),
+                LightNeed = reader.GetString(8),
+                Notes = reader.GetString(9)
             });
         }
     }
 
     private static async Task LoadPopulationAsync(MySqlConnection connection, Dictionary<Guid, Aquarium> aquariums, CancellationToken cancellationToken)
     {
-        await using var command = new MySqlCommand("SELECT Id, AquariumId, AddedOn, SpeciesName, CommonName, Type, Quantity, Notes FROM PopulationMembers;", connection);
+        await using var command = new MySqlCommand("SELECT Id, AquariumId, AddedOn, MovementType, SpeciesName, CommonName, Type, Quantity, Notes FROM PopulationMembers ORDER BY AquariumId, AddedOn ASC, CommonName ASC, SpeciesName ASC;", connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         while (await reader.ReadAsync(cancellationToken) && aquariums.TryGetValue(ReadGuid(reader, 1), out var aquarium))
@@ -296,11 +298,12 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             {
                 Id = ReadGuid(reader, 0),
                 AddedOn = reader.GetDateTime(2).Date,
-                SpeciesName = reader.GetString(3),
-                CommonName = reader.GetString(4),
-                Type = Enum.Parse<PopulationType>(reader.GetString(5)),
-                Quantity = reader.GetInt32(6),
-                Notes = reader.GetString(7)
+                MovementType = ParseEnumOrDefault(reader.GetString(3), InventoryMovementType.Addition),
+                SpeciesName = reader.GetString(4),
+                CommonName = reader.GetString(5),
+                Type = Enum.Parse<PopulationType>(reader.GetString(6)),
+                Quantity = NormalizeInventoryQuantity(reader.GetInt32(7)),
+                Notes = reader.GetString(8)
             });
         }
     }
@@ -377,10 +380,12 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 connection,
                 transaction,
                 """
-                INSERT INTO AquariumPlants (Id, AquariumId, AddedOn, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes)
-                VALUES (@Id, @AquariumId, @AddedOn, @CommonName, @ScientificName, @GrowthSpeed, @LightNeed, @Notes)
+                INSERT INTO AquariumPlants (Id, AquariumId, AddedOn, MovementType, Quantity, CommonName, ScientificName, GrowthSpeed, LightNeed, Notes)
+                VALUES (@Id, @AquariumId, @AddedOn, @MovementType, @Quantity, @CommonName, @ScientificName, @GrowthSpeed, @LightNeed, @Notes)
                 ON DUPLICATE KEY UPDATE
                     AddedOn = VALUES(AddedOn),
+                    MovementType = VALUES(MovementType),
+                    Quantity = VALUES(Quantity),
                     CommonName = VALUES(CommonName),
                     ScientificName = VALUES(ScientificName),
                     GrowthSpeed = VALUES(GrowthSpeed),
@@ -391,6 +396,8 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@Id", plant.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
                 Parameter("@AddedOn", NormalizeDateOrToday(plant.AddedOn)),
+                Parameter("@MovementType", plant.MovementType.ToString()),
+                Parameter("@Quantity", NormalizeInventoryQuantity(plant.Quantity)),
                 Parameter("@CommonName", CapitalizeFirstLetter(plant.CommonName, 120)),
                 Parameter("@ScientificName", plant.ScientificName),
                 Parameter("@GrowthSpeed", plant.GrowthSpeed.ToString()),
@@ -406,10 +413,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 connection,
                 transaction,
                 """
-                INSERT INTO PopulationMembers (Id, AquariumId, AddedOn, SpeciesName, CommonName, Type, Quantity, Notes)
-                VALUES (@Id, @AquariumId, @AddedOn, @SpeciesName, @CommonName, @Type, @Quantity, @Notes)
+                INSERT INTO PopulationMembers (Id, AquariumId, AddedOn, MovementType, SpeciesName, CommonName, Type, Quantity, Notes)
+                VALUES (@Id, @AquariumId, @AddedOn, @MovementType, @SpeciesName, @CommonName, @Type, @Quantity, @Notes)
                 ON DUPLICATE KEY UPDATE
                     AddedOn = VALUES(AddedOn),
+                    MovementType = VALUES(MovementType),
                     SpeciesName = VALUES(SpeciesName),
                     CommonName = VALUES(CommonName),
                     Type = VALUES(Type),
@@ -420,10 +428,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@Id", member.Id.ToString()),
                 Parameter("@AquariumId", aquarium.Id.ToString()),
                 Parameter("@AddedOn", NormalizeDateOrToday(member.AddedOn)),
+                Parameter("@MovementType", member.MovementType.ToString()),
                 Parameter("@SpeciesName", member.SpeciesName),
                 Parameter("@CommonName", CapitalizeFirstLetter(member.CommonName, 120)),
                 Parameter("@Type", member.Type.ToString()),
-                Parameter("@Quantity", member.Quantity),
+                Parameter("@Quantity", NormalizeInventoryQuantity(member.Quantity)),
                 Parameter("@Notes", member.Notes));
         }
 
@@ -514,6 +523,19 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     private static DateTime NormalizeDateOrToday(DateTime value)
     {
         return value == default ? DateTime.Today : value.Date;
+    }
+
+    private static int NormalizeInventoryQuantity(int quantity)
+    {
+        return Math.Max(1, Math.Abs(quantity));
+    }
+
+    private static TEnum ParseEnumOrDefault<TEnum>(string value, TEnum fallback)
+        where TEnum : struct
+    {
+        return Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : fallback;
     }
 
     private static decimal? ReadNullableDecimal(MySqlDataReader reader, int ordinal)
@@ -672,9 +694,20 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             "ALTER TABLE AquariumPlants ADD COLUMN AddedOn DATE NULL AFTER AquariumId;",
             "UPDATE AquariumPlants SET AddedOn = CURRENT_DATE WHERE AddedOn IS NULL;",
             "ALTER TABLE AquariumPlants MODIFY AddedOn DATE NOT NULL;",
+            "ALTER TABLE AquariumPlants ADD COLUMN MovementType VARCHAR(20) NULL AFTER AddedOn;",
+            "UPDATE AquariumPlants SET MovementType = 'Addition' WHERE MovementType IS NULL OR MovementType = '';",
+            "ALTER TABLE AquariumPlants MODIFY MovementType VARCHAR(20) NOT NULL;",
+            "ALTER TABLE AquariumPlants ADD COLUMN Quantity INT NULL AFTER MovementType;",
+            "UPDATE AquariumPlants SET Quantity = 1 WHERE Quantity IS NULL OR Quantity < 1;",
+            "ALTER TABLE AquariumPlants MODIFY Quantity INT NOT NULL;",
             "ALTER TABLE PopulationMembers ADD COLUMN AddedOn DATE NULL AFTER AquariumId;",
             "UPDATE PopulationMembers SET AddedOn = CURRENT_DATE WHERE AddedOn IS NULL;",
-            "ALTER TABLE PopulationMembers MODIFY AddedOn DATE NOT NULL;"
+            "ALTER TABLE PopulationMembers MODIFY AddedOn DATE NOT NULL;",
+            "ALTER TABLE PopulationMembers ADD COLUMN MovementType VARCHAR(20) NULL AFTER AddedOn;",
+            "UPDATE PopulationMembers SET MovementType = 'Addition' WHERE MovementType IS NULL OR MovementType = '';",
+            "ALTER TABLE PopulationMembers MODIFY MovementType VARCHAR(20) NOT NULL;",
+            "UPDATE PopulationMembers SET Quantity = ABS(Quantity) WHERE Quantity < 0;",
+            "UPDATE PopulationMembers SET Quantity = 1 WHERE Quantity IS NULL OR Quantity < 1;"
         };
 
         foreach (var sql in alterStatements)

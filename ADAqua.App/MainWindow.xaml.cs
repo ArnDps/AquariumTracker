@@ -486,7 +486,7 @@ public partial class MainWindow : Window
     {
         if (e.EditAction == DataGridEditAction.Commit)
         {
-            QueueInlineGridPersist(T("StatusPlantSaved"), "Plant inline edit persist failed.");
+            QueueInlineGridPersist(T("StatusPlantSaved"), "Plant inline edit persist failed.", viewModel.RefreshPlantInventoryAfterEdit);
         }
     }
 
@@ -494,7 +494,7 @@ public partial class MainWindow : Window
     {
         if (e.EditAction == DataGridEditAction.Commit)
         {
-            QueueInlineGridPersist(T("StatusPlantSaved"), "Plant row edit persist failed.");
+            QueueInlineGridPersist(T("StatusPlantSaved"), "Plant row edit persist failed.", viewModel.RefreshPlantInventoryAfterEdit);
         }
     }
 
@@ -502,7 +502,7 @@ public partial class MainWindow : Window
     {
         if (e.EditAction == DataGridEditAction.Commit)
         {
-            QueueInlineGridPersist(T("StatusPopulationSaved"), "Population inline edit persist failed.");
+            QueueInlineGridPersist(T("StatusPopulationSaved"), "Population inline edit persist failed.", viewModel.RefreshPopulationInventoryAfterEdit);
         }
     }
 
@@ -510,7 +510,7 @@ public partial class MainWindow : Window
     {
         if (e.EditAction == DataGridEditAction.Commit)
         {
-            QueueInlineGridPersist(T("StatusPopulationSaved"), "Population row edit persist failed.");
+            QueueInlineGridPersist(T("StatusPopulationSaved"), "Population row edit persist failed.", viewModel.RefreshPopulationInventoryAfterEdit);
         }
     }
 
@@ -1879,6 +1879,10 @@ public partial class MainWindow : Window
             ["UiButtonDeleteMeasurement"] = "Supprimer la mesure",
             ["UiGridDate"] = "Date",
             ["UiAddedOn"] = "Date d'ajout",
+            ["UiInventoryMovement"] = "Mouvement",
+            ["UiMovementAddition"] = "Ajout",
+            ["UiMovementRemoval"] = "Retrait",
+            ["UiPlantQuantity"] = "Nombre",
             ["UiPlantCommonName"] = "Nom courant",
             ["UiPlantReferenceChoice"] = "Referentiel",
             ["UiPlantScientificName"] = "Nom scientifique",
@@ -1887,19 +1891,30 @@ public partial class MainWindow : Window
             ["UiGrowthMedium"] = "Moyenne",
             ["UiGrowthFast"] = "Rapide",
             ["UiPlantLightNeed"] = "Lumiere",
+            ["UiPlantInventoryTotals"] = "Total plantes par espece",
             ["UiLightLow"] = "Faible",
             ["UiLightMedium"] = "Moyenne",
             ["UiLightHigh"] = "Forte",
             ["UiButtonAddPlant"] = "Ajouter la plante",
             ["UiButtonDeletePlant"] = "Supprimer la plante",
+            ["UiButtonAddPlantMovement"] = "Ajouter le mouvement",
+            ["UiButtonDeletePlantMovement"] = "Supprimer la ligne",
             ["UiGridScientific"] = "Scientifique",
             ["UiGridGrowth"] = "Croissance",
             ["UiPopulationSpecies"] = "Espece",
             ["UiAnimalReferenceChoice"] = "Referentiel faune",
             ["UiPopulationType"] = "Type",
             ["UiPopulationQuantity"] = "Quantite",
+            ["UiPopulationFamily"] = "Famille",
+            ["UiPopulationInventoryTotals"] = "Total population par espece",
+            ["UiPopulationTypeFish"] = "Poissons",
+            ["UiPopulationTypeShrimp"] = "Crevettes",
+            ["UiPopulationTypeSnail"] = "Mollusques",
+            ["UiPopulationTypeOther"] = "Autres",
             ["UiButtonAddPopulation"] = "Ajouter la population",
             ["UiButtonDeletePopulation"] = "Supprimer la population",
+            ["UiButtonAddPopulationMovement"] = "Ajouter le mouvement",
+            ["UiButtonDeletePopulationMovement"] = "Supprimer la ligne",
             ["UiInterventionDate"] = "Date",
             ["UiInterventionTime"] = "Heure",
             ["UiInterventionType"] = "Type",
@@ -2031,6 +2046,10 @@ public partial class MainWindow : Window
             ["UiWaterTypeMarine"] = "Marine",
             ["UiLabelStartedOn"] = "Start date",
             ["UiAddedOn"] = "Added on",
+            ["UiInventoryMovement"] = "Movement",
+            ["UiMovementAddition"] = "Addition",
+            ["UiMovementRemoval"] = "Removal",
+            ["UiPlantQuantity"] = "Count",
             ["UiPlantCommonName"] = "Common name",
             ["UiPlantReferenceChoice"] = "Reference catalog",
             ["UiPlantScientificName"] = "Scientific name",
@@ -2039,6 +2058,7 @@ public partial class MainWindow : Window
             ["UiGrowthMedium"] = "Medium",
             ["UiGrowthFast"] = "Fast",
             ["UiPlantLightNeed"] = "Light",
+            ["UiPlantInventoryTotals"] = "Plant totals by species",
             ["UiLightLow"] = "Low",
             ["UiLightMedium"] = "Medium",
             ["UiLightHigh"] = "High",
@@ -2047,14 +2067,24 @@ public partial class MainWindow : Window
             ["UiButtonDeleteMeasurement"] = "Delete measurement",
             ["UiButtonAddPlant"] = "Add plant",
             ["UiButtonDeletePlant"] = "Delete plant",
+            ["UiButtonAddPlantMovement"] = "Add movement",
+            ["UiButtonDeletePlantMovement"] = "Delete row",
             ["UiGridScientific"] = "Scientific",
             ["UiGridGrowth"] = "Growth",
             ["UiPopulationSpecies"] = "Species",
             ["UiAnimalReferenceChoice"] = "Animal reference",
             ["UiPopulationType"] = "Type",
             ["UiPopulationQuantity"] = "Quantity",
+            ["UiPopulationFamily"] = "Family",
+            ["UiPopulationInventoryTotals"] = "Population totals by species",
+            ["UiPopulationTypeFish"] = "Fish",
+            ["UiPopulationTypeShrimp"] = "Shrimp",
+            ["UiPopulationTypeSnail"] = "Molluscs",
+            ["UiPopulationTypeOther"] = "Other",
             ["UiButtonAddPopulation"] = "Add population",
             ["UiButtonDeletePopulation"] = "Delete population",
+            ["UiButtonAddPopulationMovement"] = "Add movement",
+            ["UiButtonDeletePopulationMovement"] = "Delete row",
             ["UiInterventionDate"] = "Date",
             ["UiInterventionTime"] = "Time",
             ["UiInterventionType"] = "Type",
@@ -2186,6 +2216,10 @@ public partial class MainWindow : Window
             ["UiWaterTypeMarine"] = "Meerwasser",
             ["UiLabelStartedOn"] = "Startdatum",
             ["UiAddedOn"] = "Hinzugefuegt am",
+            ["UiInventoryMovement"] = "Bewegung",
+            ["UiMovementAddition"] = "Zugang",
+            ["UiMovementRemoval"] = "Abgang",
+            ["UiPlantQuantity"] = "Anzahl",
             ["UiPlantCommonName"] = "Trivialname",
             ["UiPlantReferenceChoice"] = "Pflanzenkatalog",
             ["UiPlantScientificName"] = "Wissenschaftlicher Name",
@@ -2194,6 +2228,7 @@ public partial class MainWindow : Window
             ["UiGrowthMedium"] = "Mittel",
             ["UiGrowthFast"] = "Schnell",
             ["UiPlantLightNeed"] = "Licht",
+            ["UiPlantInventoryTotals"] = "Pflanzensumme je Art",
             ["UiLightLow"] = "Niedrig",
             ["UiLightMedium"] = "Mittel",
             ["UiLightHigh"] = "Stark",
@@ -2204,12 +2239,22 @@ public partial class MainWindow : Window
             ["UiButtonDeleteMeasurement"] = "Messung loeschen",
             ["UiButtonAddPlant"] = "Pflanze hinzufuegen",
             ["UiButtonDeletePlant"] = "Pflanze loeschen",
+            ["UiButtonAddPlantMovement"] = "Bewegung hinzufuegen",
+            ["UiButtonDeletePlantMovement"] = "Zeile loeschen",
             ["UiPopulationSpecies"] = "Art",
             ["UiAnimalReferenceChoice"] = "Tierkatalog",
             ["UiPopulationType"] = "Typ",
             ["UiPopulationQuantity"] = "Menge",
+            ["UiPopulationFamily"] = "Familie",
+            ["UiPopulationInventoryTotals"] = "Besatzsumme je Art",
+            ["UiPopulationTypeFish"] = "Fische",
+            ["UiPopulationTypeShrimp"] = "Garnelen",
+            ["UiPopulationTypeSnail"] = "Mollusken",
+            ["UiPopulationTypeOther"] = "Andere",
             ["UiButtonAddPopulation"] = "Besatz hinzufuegen",
             ["UiButtonDeletePopulation"] = "Besatz loeschen",
+            ["UiButtonAddPopulationMovement"] = "Bewegung hinzufuegen",
+            ["UiButtonDeletePopulationMovement"] = "Zeile loeschen",
             ["UiInterventionDate"] = "Datum",
             ["UiInterventionTime"] = "Uhrzeit",
             ["UiInterventionType"] = "Typ",
@@ -2401,6 +2446,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string animalFilterNitratesMax = string.Empty;
     private int selectedTrendPeriodDays = 30;
     private int interventionLocalizationVersion;
+    private int movementLocalizationVersion;
     private readonly List<PlantReferenceItem> plantReferenceCatalog = [];
     private readonly List<AnimalReferenceItem> animalReferenceCatalog = [];
 
@@ -2412,6 +2458,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         selectedAquarium = CreateDefaultAquarium();
         Aquariums.Add(selectedAquarium);
         RebuildHealthDashboard();
+        RebuildInventoryTotals();
         RebuildPlantReference();
         RebuildAnimalReference();
         StatusMessage = text("StatusReady");
@@ -2433,9 +2480,12 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ObservableCollection<PlantReferenceItem> PlantReferencesFiltered { get; } = [];
     public ObservableCollection<AnimalReferenceItem> AnimalReferenceChoices { get; } = [];
     public ObservableCollection<AnimalReferenceItem> AnimalReferencesFiltered { get; } = [];
+    public ObservableCollection<PlantInventoryTotal> PlantInventoryTotals { get; } = [];
+    public ObservableCollection<PopulationInventoryTotal> PopulationInventoryTotals { get; } = [];
     public ObservableCollection<WaterTypeOption> WaterTypeOptions { get; } = [];
     public ObservableCollection<InterventionTypeOption> InterventionTypeOptions { get; } = [];
     public int InterventionLocalizationVersion => interventionLocalizationVersion;
+    public int MovementLocalizationVersion => movementLocalizationVersion;
 
     public Aquarium SelectedAquarium
     {
@@ -2460,6 +2510,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(SelectedAquariumWaterType));
                 OnPropertyChanged(nameof(IsSelectedAquariumMarine));
                 RebuildHealthDashboard();
+                RebuildInventoryTotals();
                 RebuildPlantReference();
                 RebuildAnimalReference();
             }
@@ -2817,6 +2868,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         text = provider;
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
+        UpdateMovementLocalization();
+        RebuildInventoryTotals();
         if (string.IsNullOrWhiteSpace(StatusMessage))
         {
             StatusMessage = text("StatusReady");
@@ -2857,6 +2910,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             item.SetLanguage(currentLanguage);
         }
+
+        UpdateMovementLocalization();
+        RebuildInventoryTotals();
     }
 
     private void UpdateWaterTypeOptions()
@@ -2883,11 +2939,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(InterventionLocalizationVersion));
     }
 
+    private void UpdateMovementLocalization()
+    {
+        movementLocalizationVersion++;
+        OnPropertyChanged(nameof(MovementLocalizationVersion));
+    }
+
     public void NotifyLanguageChanged()
     {
         NormalizeAllAquariumWaterTypes();
 
         RebuildHealthDashboard();
+        RebuildInventoryTotals();
         OnPropertyChanged(nameof(SelectedAquarium));
         RebuildPlantReferenceChoices();
         RebuildPlantReference();
@@ -2915,6 +2978,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SelectedAquarium = aquarium;
         StatusMessage = text("StatusNewAquariumSaved");
         RebuildHealthDashboard();
+        RebuildInventoryTotals();
         RebuildPlantReference();
         RebuildAnimalReference();
     }
@@ -2945,6 +3009,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             aquarium.WaterType = NormalizeWaterTypeCode(aquarium.WaterType);
             SortMeasurementsDescending(aquarium);
             SortInterventionsDescending(aquarium);
+            NormalizeInventoryEntries(aquarium);
+            SortInventoryMovementsAscending(aquarium);
             Aquariums.Add(aquarium);
         }
 
@@ -2956,6 +3022,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         SelectedAquarium = Aquariums[0];
         RebuildHealthDashboard();
+        RebuildInventoryTotals();
         RebuildPlantReference();
         RebuildAnimalReference();
     }
@@ -2967,8 +3034,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             SortMeasurementsDescending(aquarium);
             SortInterventionsDescending(aquarium);
+            NormalizeInventoryEntries(aquarium);
+            SortInventoryMovementsAscending(aquarium);
             SelectedAquarium = aquarium;
             RebuildHealthDashboard();
+            RebuildInventoryTotals();
             RebuildPlantReference();
             RebuildAnimalReference();
         }
@@ -3058,7 +3128,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public void AddPlant()
     {
         NewPlant.AddedOn = NormalizeDateOrToday(NewPlant.AddedOn);
+        NewPlant.Quantity = NormalizeInventoryQuantity(NewPlant.Quantity);
         SelectedAquarium.Plants.Add(NewPlant);
+        SortPlantMovementsAscending(SelectedAquarium);
         SelectedPlant = NewPlant;
         NewPlant = new AquariumPlant();
         SelectedPlantReferenceForNewPlant = null;
@@ -3156,7 +3228,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public void AddPopulation()
     {
         NewPopulation.AddedOn = NormalizeDateOrToday(NewPopulation.AddedOn);
+        NewPopulation.Quantity = NormalizeInventoryQuantity(NewPopulation.Quantity);
         SelectedAquarium.Population.Add(NewPopulation);
+        SortPopulationMovementsAscending(SelectedAquarium);
         SelectedPopulation = NewPopulation;
         NewPopulation = new PopulationMember();
         SelectedAnimalReferenceForNewPopulation = null;
@@ -3295,9 +3369,180 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    public void RefreshPlantInventoryAfterEdit()
+    {
+        var selected = SelectedPlant;
+        NormalizePlantEntries(SelectedAquarium);
+        SortPlantMovementsAscending(SelectedAquarium);
+        SelectedPlant = selected;
+        RebuildInventoryTotals();
+        RefreshSelectedAquarium();
+    }
+
+    public void RefreshPopulationInventoryAfterEdit()
+    {
+        var selected = SelectedPopulation;
+        NormalizePopulationEntries(SelectedAquarium);
+        SortPopulationMovementsAscending(SelectedAquarium);
+        SelectedPopulation = selected;
+        RebuildInventoryTotals();
+        RefreshSelectedAquarium();
+    }
+
+    private void RebuildInventoryTotals()
+    {
+        PlantInventoryTotals.Clear();
+        PopulationInventoryTotals.Clear();
+
+        if (selectedAquarium is null)
+        {
+            return;
+        }
+
+        foreach (var total in selectedAquarium.Plants
+            .GroupBy(plant => BuildSpeciesKey(plant.CommonName, plant.ScientificName), StringComparer.CurrentCultureIgnoreCase)
+            .Select(group =>
+            {
+                var first = group.First();
+                return new PlantInventoryTotal(
+                    first.CommonName,
+                    first.ScientificName,
+                    group.Sum(plant => ToSignedQuantity(plant.Quantity, plant.MovementType)));
+            })
+            .Where(total => total.Quantity != 0)
+            .OrderBy(total => total.CommonName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(total => total.ScientificName, StringComparer.CurrentCultureIgnoreCase))
+        {
+            PlantInventoryTotals.Add(total);
+        }
+
+        foreach (var total in selectedAquarium.Population
+            .GroupBy(member => new PopulationInventoryKey(member.Type, BuildSpeciesKey(member.CommonName, member.SpeciesName)))
+            .Select(group =>
+            {
+                var first = group.First();
+                return new PopulationInventoryTotal(
+                    BuildPopulationFamilyLabel(first.Type),
+                    first.CommonName,
+                    first.SpeciesName,
+                    group.Sum(member => ToSignedQuantity(member.Quantity, member.MovementType)));
+            })
+            .Where(total => total.Quantity != 0)
+            .OrderBy(total => total.Family, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(total => total.CommonName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(total => total.SpeciesName, StringComparer.CurrentCultureIgnoreCase))
+        {
+            PopulationInventoryTotals.Add(total);
+        }
+    }
+
+    private string BuildPopulationFamilyLabel(PopulationType type)
+    {
+        return type switch
+        {
+            PopulationType.Shrimp => text("UiPopulationTypeShrimp"),
+            PopulationType.Snail => text("UiPopulationTypeSnail"),
+            PopulationType.Other => text("UiPopulationTypeOther"),
+            _ => text("UiPopulationTypeFish")
+        };
+    }
+
+    private static string BuildSpeciesKey(string commonName, string scientificName)
+    {
+        var species = string.IsNullOrWhiteSpace(scientificName)
+            ? commonName
+            : scientificName;
+
+        return NormalizeChoiceText(species);
+    }
+
+    private static int ToSignedQuantity(int quantity, InventoryMovementType movementType)
+    {
+        var normalized = NormalizeInventoryQuantity(quantity);
+        return movementType == InventoryMovementType.Removal
+            ? -normalized
+            : normalized;
+    }
+
+    private static int NormalizeInventoryQuantity(int quantity)
+    {
+        return Math.Max(1, Math.Abs(quantity));
+    }
+
+    private static void NormalizeInventoryEntries(Aquarium aquarium)
+    {
+        NormalizePlantEntries(aquarium);
+        NormalizePopulationEntries(aquarium);
+    }
+
+    private static void SortInventoryMovementsAscending(Aquarium aquarium)
+    {
+        SortPlantMovementsAscending(aquarium);
+        SortPopulationMovementsAscending(aquarium);
+    }
+
+    private static void SortPlantMovementsAscending(Aquarium aquarium)
+    {
+        var ordered = aquarium.Plants
+            .OrderBy(plant => plant.AddedOn)
+            .ThenBy(plant => plant.CommonName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(plant => plant.ScientificName, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        if (ordered.SequenceEqual(aquarium.Plants))
+        {
+            return;
+        }
+
+        aquarium.Plants.Clear();
+        foreach (var plant in ordered)
+        {
+            aquarium.Plants.Add(plant);
+        }
+    }
+
+    private static void SortPopulationMovementsAscending(Aquarium aquarium)
+    {
+        var ordered = aquarium.Population
+            .OrderBy(member => member.AddedOn)
+            .ThenBy(member => member.CommonName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(member => member.SpeciesName, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
+        if (ordered.SequenceEqual(aquarium.Population))
+        {
+            return;
+        }
+
+        aquarium.Population.Clear();
+        foreach (var member in ordered)
+        {
+            aquarium.Population.Add(member);
+        }
+    }
+
+    private static void NormalizePlantEntries(Aquarium aquarium)
+    {
+        foreach (var plant in aquarium.Plants)
+        {
+            plant.AddedOn = NormalizeDateOrToday(plant.AddedOn);
+            plant.Quantity = NormalizeInventoryQuantity(plant.Quantity);
+        }
+    }
+
+    private static void NormalizePopulationEntries(Aquarium aquarium)
+    {
+        foreach (var member in aquarium.Population)
+        {
+            member.AddedOn = NormalizeDateOrToday(member.AddedOn);
+            member.Quantity = NormalizeInventoryQuantity(member.Quantity);
+        }
+    }
+
     private void RefreshSelectedAquarium()
     {
         OnPropertyChanged(nameof(SelectedAquarium));
+        RebuildInventoryTotals();
         RebuildHealthDashboard();
         RebuildPlantReference();
     }
@@ -3932,6 +4177,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 public sealed record WaterTypeOption(string Code, string Label);
 public sealed record InterventionTypeOption(InterventionType Type, string Label);
 public sealed record HealthIndicator(string Name, string LatestDisplay, string TargetRange, string Trend, string Alert);
+public sealed record PlantInventoryTotal(string CommonName, string ScientificName, int Quantity);
+public sealed record PopulationInventoryTotal(string Family, string CommonName, string SpeciesName, int Quantity);
+public sealed record PopulationInventoryKey(PopulationType Type, string SpeciesKey);
 public sealed record HealthTrendSeries(
     string Name,
     string LatestValueLabel,

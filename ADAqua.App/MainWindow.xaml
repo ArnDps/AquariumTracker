@@ -56,6 +56,10 @@
         <sys:String x:Key="UiButtonDeleteMeasurement">Supprimer la mesure</sys:String>
         <sys:String x:Key="UiGridDate">Date</sys:String>
         <sys:String x:Key="UiAddedOn">Date d'ajout</sys:String>
+        <sys:String x:Key="UiInventoryMovement">Mouvement</sys:String>
+        <sys:String x:Key="UiMovementAddition">Ajout</sys:String>
+        <sys:String x:Key="UiMovementRemoval">Retrait</sys:String>
+        <sys:String x:Key="UiPlantQuantity">Nombre</sys:String>
         <sys:String x:Key="UiPlantCommonName">Nom courant</sys:String>
         <sys:String x:Key="UiPlantReferenceChoice">Referentiel</sys:String>
         <sys:String x:Key="UiPlantScientificName">Nom scientifique</sys:String>
@@ -96,19 +100,30 @@
         <sys:String x:Key="UiPlantRefApplyFilters">Appliquer filtres</sys:String>
         <sys:String x:Key="UiPlantRefResetFilters">Reinitialiser filtres</sys:String>
         <sys:String x:Key="UiPlantRefDelete">Supprimer reference</sys:String>
+        <sys:String x:Key="UiPlantInventoryTotals">Total plantes par espece</sys:String>
         <sys:String x:Key="UiLightLow">Faible</sys:String>
         <sys:String x:Key="UiLightMedium">Moyenne</sys:String>
         <sys:String x:Key="UiLightHigh">Forte</sys:String>
         <sys:String x:Key="UiButtonAddPlant">Ajouter la plante</sys:String>
         <sys:String x:Key="UiButtonDeletePlant">Supprimer la plante</sys:String>
+        <sys:String x:Key="UiButtonAddPlantMovement">Ajouter le mouvement</sys:String>
+        <sys:String x:Key="UiButtonDeletePlantMovement">Supprimer la ligne</sys:String>
         <sys:String x:Key="UiGridScientific">Scientifique</sys:String>
         <sys:String x:Key="UiGridGrowth">Croissance</sys:String>
         <sys:String x:Key="UiPopulationSpecies">Espece</sys:String>
         <sys:String x:Key="UiAnimalReferenceChoice">Referentiel faune</sys:String>
         <sys:String x:Key="UiPopulationType">Type</sys:String>
         <sys:String x:Key="UiPopulationQuantity">Quantite</sys:String>
+        <sys:String x:Key="UiPopulationFamily">Famille</sys:String>
+        <sys:String x:Key="UiPopulationInventoryTotals">Total population par espece</sys:String>
+        <sys:String x:Key="UiPopulationTypeFish">Poissons</sys:String>
+        <sys:String x:Key="UiPopulationTypeShrimp">Crevettes</sys:String>
+        <sys:String x:Key="UiPopulationTypeSnail">Mollusques</sys:String>
+        <sys:String x:Key="UiPopulationTypeOther">Autres</sys:String>
         <sys:String x:Key="UiButtonAddPopulation">Ajouter la population</sys:String>
         <sys:String x:Key="UiButtonDeletePopulation">Supprimer la population</sys:String>
+        <sys:String x:Key="UiButtonAddPopulationMovement">Ajouter le mouvement</sys:String>
+        <sys:String x:Key="UiButtonDeletePopulationMovement">Supprimer la ligne</sys:String>
         <sys:String x:Key="UiInterventionDate">Date</sys:String>
         <sys:String x:Key="UiInterventionTime">Heure</sys:String>
         <sys:String x:Key="UiInterventionType">Type</sys:String>
@@ -188,6 +203,7 @@
         <local:WaterParameterRangeValidationRule x:Key="TemperatureRangeRule" Min="18" Max="30" ParameterName="Temperature" />
         <local:FlexibleDecimalConverter x:Key="FlexibleDecimalConverter" />
         <local:InterventionTypeLabelConverter x:Key="InterventionTypeLabelConverter" />
+        <local:InventoryMovementTypeLabelConverter x:Key="InventoryMovementTypeLabelConverter" />
         <Style TargetType="{x:Type DatePickerTextBox}">
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="8,0" />
@@ -824,7 +840,7 @@
 
                         <TabItem Header="{DynamicResource UiTabPlants}">
                             <DockPanel Margin="0,18,0,0">
-                                <UniformGrid DockPanel.Dock="Top" Columns="7">
+                                <UniformGrid DockPanel.Dock="Top" Columns="9">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantReferenceChoice}" />
                                         <ComboBox ItemsSource="{Binding PlantReferenceChoices}"
@@ -849,6 +865,20 @@
                                                     Margin="0,4,12,12"
                                                     MinHeight="34"
                                                     VerticalContentAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiInventoryMovement}" />
+                                        <ComboBox SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding NewPlant.MovementType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34">
+                                            <ComboBoxItem Content="{DynamicResource UiMovementAddition}" Tag="{x:Static domain:InventoryMovementType.Addition}" />
+                                            <ComboBoxItem Content="{DynamicResource UiMovementRemoval}" Tag="{x:Static domain:InventoryMovementType.Removal}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiPlantQuantity}" />
+                                        <TextBox Text="{Binding NewPlant.Quantity, UpdateSourceTrigger=PropertyChanged}" />
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPlantGrowth}" />
@@ -877,65 +907,126 @@
                                     </StackPanel>
                                 </UniformGrid>
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                                    <Button Content="{DynamicResource UiButtonAddPlant}" Click="AddPlant_Click" />
-                                    <Button Content="{DynamicResource UiButtonDeletePlant}" Click="DeletePlant_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
+                                    <Button Content="{DynamicResource UiButtonAddPlantMovement}" Click="AddPlant_Click" />
+                                    <Button Content="{DynamicResource UiButtonDeletePlantMovement}" Click="DeletePlant_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Plants}"
-                                          SelectedItem="{Binding SelectedPlant}"
-                                          IsReadOnly="False"
-                                          CellEditEnding="PlantGrid_CellEditEnding"
-                                          RowEditEnding="PlantGrid_RowEditEnding">
-                                    <DataGrid.Columns>
-                                        <DataGridTemplateColumn Width="130" SortMemberPath="AddedOn">
-                                            <DataGridTemplateColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiAddedOn}" />
-                                            </DataGridTemplateColumn.Header>
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding AddedOn, StringFormat={}{0:d}}" VerticalAlignment="Center" />
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                            <DataGridTemplateColumn.CellEditingTemplate>
-                                                <DataTemplate>
-                                                    <DatePicker SelectedDate="{Binding AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                MinHeight="32"
-                                                                VerticalContentAlignment="Center" />
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellEditingTemplate>
-                                        </DataGridTemplateColumn>
-                                        <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPlantCommonName}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding ScientificName}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPlantScientificName}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding GrowthSpeed}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPlantGrowth}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding LightNeed}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPlantLightNeed}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiLabelNotes}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                    </DataGrid.Columns>
-                                </DataGrid>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="2*" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <DataGrid Grid.Row="0"
+                                              ItemsSource="{Binding SelectedAquarium.Plants}"
+                                              SelectedItem="{Binding SelectedPlant}"
+                                              IsReadOnly="False"
+                                              CellEditEnding="PlantGrid_CellEditEnding"
+                                              RowEditEnding="PlantGrid_RowEditEnding">
+                                        <DataGrid.Columns>
+                                            <DataGridTemplateColumn Width="130" SortMemberPath="AddedOn">
+                                                <DataGridTemplateColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiAddedOn}" />
+                                                </DataGridTemplateColumn.Header>
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding AddedOn, StringFormat={}{0:d}}" VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                                <DataGridTemplateColumn.CellEditingTemplate>
+                                                    <DataTemplate>
+                                                        <DatePicker SelectedDate="{Binding AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                    MinHeight="32"
+                                                                    VerticalContentAlignment="Center" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellEditingTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Width="120" SortMemberPath="MovementType">
+                                                <DataGridTemplateColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiInventoryMovement}" />
+                                                </DataGridTemplateColumn.Header>
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock VerticalAlignment="Center">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding Converter="{StaticResource InventoryMovementTypeLabelConverter}">
+                                                                    <Binding Path="MovementType" />
+                                                                    <Binding Path="DataContext.MovementLocalizationVersion" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                                <DataGridTemplateColumn.CellEditingTemplate>
+                                                    <DataTemplate>
+                                                        <ComboBox SelectedValuePath="Tag"
+                                                                  SelectedValue="{Binding MovementType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                  MinHeight="32"
+                                                                  Margin="0">
+                                                            <ComboBoxItem Content="{DynamicResource UiMovementAddition}" Tag="{x:Static domain:InventoryMovementType.Addition}" />
+                                                            <ComboBoxItem Content="{DynamicResource UiMovementRemoval}" Tag="{x:Static domain:InventoryMovementType.Removal}" />
+                                                        </ComboBox>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellEditingTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTextColumn Binding="{Binding Quantity}" Width="90">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantQuantity}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantCommonName}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding ScientificName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantScientificName}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding GrowthSpeed}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantGrowth}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding LightNeed}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantLightNeed}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiLabelNotes}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    <TextBlock Grid.Row="1" Text="{DynamicResource UiPlantInventoryTotals}" FontWeight="SemiBold" Margin="0,12,0,0" />
+                                    <DataGrid Grid.Row="2" ItemsSource="{Binding PlantInventoryTotals}" IsReadOnly="True" CanUserSortColumns="True">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantCommonName}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding ScientificName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantScientificName}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding Quantity}" Width="140">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantQuantity}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Grid>
                             </DockPanel>
                         </TabItem>
 
                         <TabItem Header="{DynamicResource UiTabPopulation}">
                             <DockPanel Margin="0,18,0,0">
-                                <UniformGrid DockPanel.Dock="Top" Columns="7">
+                                <UniformGrid DockPanel.Dock="Top" Columns="8">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource UiAnimalReferenceChoice}" />
                                         <ComboBox ItemsSource="{Binding AnimalReferenceChoices}"
@@ -962,6 +1053,16 @@
                                                     VerticalContentAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiInventoryMovement}" />
+                                        <ComboBox SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding NewPopulation.MovementType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34">
+                                            <ComboBoxItem Content="{DynamicResource UiMovementAddition}" Tag="{x:Static domain:InventoryMovementType.Addition}" />
+                                            <ComboBoxItem Content="{DynamicResource UiMovementRemoval}" Tag="{x:Static domain:InventoryMovementType.Removal}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel>
                                         <TextBlock Text="{DynamicResource UiPopulationType}" />
                                         <TextBox Text="{Binding NewPopulation.Type}" />
                                     </StackPanel>
@@ -975,59 +1076,120 @@
                                     </StackPanel>
                                 </UniformGrid>
                                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                                    <Button Content="{DynamicResource UiButtonAddPopulation}" Click="AddPopulation_Click" />
-                                    <Button Content="{DynamicResource UiButtonDeletePopulation}" Click="DeletePopulation_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
+                                    <Button Content="{DynamicResource UiButtonAddPopulationMovement}" Click="AddPopulation_Click" />
+                                    <Button Content="{DynamicResource UiButtonDeletePopulationMovement}" Click="DeletePopulation_Click" Background="{DynamicResource ButtonDangerBrush}" BorderBrush="{DynamicResource ButtonDangerBrush}" />
                                 </StackPanel>
-                                <DataGrid ItemsSource="{Binding SelectedAquarium.Population}"
-                                          SelectedItem="{Binding SelectedPopulation}"
-                                          IsReadOnly="False"
-                                          CellEditEnding="PopulationGrid_CellEditEnding"
-                                          RowEditEnding="PopulationGrid_RowEditEnding">
-                                    <DataGrid.Columns>
-                                        <DataGridTemplateColumn Width="130" SortMemberPath="AddedOn">
-                                            <DataGridTemplateColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiAddedOn}" />
-                                            </DataGridTemplateColumn.Header>
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding AddedOn, StringFormat={}{0:d}}" VerticalAlignment="Center" />
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                            <DataGridTemplateColumn.CellEditingTemplate>
-                                                <DataTemplate>
-                                                    <DatePicker SelectedDate="{Binding AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                MinHeight="32"
-                                                                VerticalContentAlignment="Center" />
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellEditingTemplate>
-                                        </DataGridTemplateColumn>
-                                        <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPlantCommonName}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding SpeciesName}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPopulationSpecies}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Type}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPopulationType}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Quantity}" Width="*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiPopulationQuantity}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                        <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
-                                            <DataGridTextColumn.Header>
-                                                <TextBlock Text="{DynamicResource UiLabelNotes}" />
-                                            </DataGridTextColumn.Header>
-                                        </DataGridTextColumn>
-                                    </DataGrid.Columns>
-                                </DataGrid>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="2*" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <DataGrid Grid.Row="0"
+                                              ItemsSource="{Binding SelectedAquarium.Population}"
+                                              SelectedItem="{Binding SelectedPopulation}"
+                                              IsReadOnly="False"
+                                              CellEditEnding="PopulationGrid_CellEditEnding"
+                                              RowEditEnding="PopulationGrid_RowEditEnding">
+                                        <DataGrid.Columns>
+                                            <DataGridTemplateColumn Width="130" SortMemberPath="AddedOn">
+                                                <DataGridTemplateColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiAddedOn}" />
+                                                </DataGridTemplateColumn.Header>
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding AddedOn, StringFormat={}{0:d}}" VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                                <DataGridTemplateColumn.CellEditingTemplate>
+                                                    <DataTemplate>
+                                                        <DatePicker SelectedDate="{Binding AddedOn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                    MinHeight="32"
+                                                                    VerticalContentAlignment="Center" />
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellEditingTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTemplateColumn Width="120" SortMemberPath="MovementType">
+                                                <DataGridTemplateColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiInventoryMovement}" />
+                                                </DataGridTemplateColumn.Header>
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock VerticalAlignment="Center">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding Converter="{StaticResource InventoryMovementTypeLabelConverter}">
+                                                                    <Binding Path="MovementType" />
+                                                                    <Binding Path="DataContext.MovementLocalizationVersion" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                                <DataGridTemplateColumn.CellEditingTemplate>
+                                                    <DataTemplate>
+                                                        <ComboBox SelectedValuePath="Tag"
+                                                                  SelectedValue="{Binding MovementType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                  MinHeight="32"
+                                                                  Margin="0">
+                                                            <ComboBoxItem Content="{DynamicResource UiMovementAddition}" Tag="{x:Static domain:InventoryMovementType.Addition}" />
+                                                            <ComboBoxItem Content="{DynamicResource UiMovementRemoval}" Tag="{x:Static domain:InventoryMovementType.Removal}" />
+                                                        </ComboBox>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellEditingTemplate>
+                                            </DataGridTemplateColumn>
+                                            <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantCommonName}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding SpeciesName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPopulationSpecies}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding Type}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPopulationType}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding Quantity}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPopulationQuantity}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding Notes}" Width="2*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiLabelNotes}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                    <TextBlock Grid.Row="1" Text="{DynamicResource UiPopulationInventoryTotals}" FontWeight="SemiBold" Margin="0,12,0,0" />
+                                    <DataGrid Grid.Row="2" ItemsSource="{Binding PopulationInventoryTotals}" IsReadOnly="True" CanUserSortColumns="True">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Binding="{Binding Family}" Width="150">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPopulationFamily}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding CommonName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPlantCommonName}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding SpeciesName}" Width="*">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPopulationSpecies}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                            <DataGridTextColumn Binding="{Binding Quantity}" Width="140">
+                                                <DataGridTextColumn.Header>
+                                                    <TextBlock Text="{DynamicResource UiPopulationQuantity}" />
+                                                </DataGridTextColumn.Header>
+                                            </DataGridTextColumn>
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </Grid>
                             </DockPanel>
                         </TabItem>
 
