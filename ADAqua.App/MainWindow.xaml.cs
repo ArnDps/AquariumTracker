@@ -25,6 +25,15 @@ public partial class MainWindow : Window
     private const string LanguageGerman = "de";
     private const string ThemeLight = "light";
     private const string ThemeDark = "dark";
+    private const string FontSizeSmall = "small";
+    private const string FontSizeNormal = "normal";
+    private const string FontSizeLarge = "large";
+    private const string DensityCompact = "compact";
+    private const string DensityComfortable = "comfortable";
+    private const string AccentTeal = "teal";
+    private const string AccentBlue = "blue";
+    private const string AccentGreen = "green";
+    private const string AccentPurple = "purple";
 
     private readonly MainWindowViewModel viewModel = new();
     private readonly Dictionary<string, Dictionary<string, string>> localizedTexts = CreateLocalizedTexts();
@@ -38,6 +47,9 @@ public partial class MainWindow : Window
     private bool isClassificationPersisting;
     private string currentLanguage = LanguageFrench;
     private string currentTheme = ThemeLight;
+    private string currentFontSize = FontSizeNormal;
+    private string currentDensity = DensityComfortable;
+    private string currentAccentColor = AccentTeal;
 
     public MainWindow()
     {
@@ -52,14 +64,23 @@ public partial class MainWindow : Window
         var appSettings = AppSettingsStore.Load();
         var startupLanguage = NormalizeLanguageCode(appSettings?.LanguageCode);
         var startupTheme = NormalizeThemeCode(appSettings?.ThemeCode);
+        var startupFontSize = NormalizeFontSizeCode(appSettings?.FontSizeCode);
+        var startupDensity = NormalizeDensityCode(appSettings?.DensityCode);
+        var startupAccentColor = NormalizeAccentColorCode(appSettings?.AccentColorCode);
 
+        currentAccentColor = startupAccentColor;
         ApplyTheme(startupTheme);
+        ApplyFontSize(startupFontSize);
+        ApplyDensity(startupDensity);
         ApplyLanguage(startupLanguage);
         ApplyWaterParameterValidationRanges();
 
         isApplyingSettings = true;
         SelectComboByTag(LanguageComboBox, startupLanguage);
         SelectComboByTag(ThemeComboBox, startupTheme);
+        SelectComboByTag(FontSizeComboBox, startupFontSize);
+        SelectComboByTag(DensityComboBox, startupDensity);
+        SelectComboByTag(AccentColorComboBox, startupAccentColor);
         isApplyingSettings = false;
 
         var resolved = ResolveConnectionConfiguration();
@@ -858,6 +879,7 @@ public partial class MainWindow : Window
         }
 
         ApplyLanguage(languageCode);
+        SaveCurrentAppSettings();
         viewModel.StatusMessage = T("StatusLanguageChanged");
     }
 
@@ -869,28 +891,72 @@ public partial class MainWindow : Window
         }
 
         ApplyTheme(themeCode);
+        SaveCurrentAppSettings();
         viewModel.StatusMessage = T("StatusThemeChanged");
     }
 
+    private void FontSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (isApplyingSettings || FontSizeComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not string fontSizeCode)
+        {
+            return;
+        }
+
+        ApplyFontSize(fontSizeCode);
+        SaveCurrentAppSettings();
+        viewModel.StatusMessage = T("StatusAppearanceChanged");
+    }
+
+    private void DensityComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (isApplyingSettings || DensityComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not string densityCode)
+        {
+            return;
+        }
+
+        ApplyDensity(densityCode);
+        SaveCurrentAppSettings();
+        viewModel.StatusMessage = T("StatusAppearanceChanged");
+    }
+
+    private void AccentColorComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (isApplyingSettings || AccentColorComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not string accentColorCode)
+        {
+            return;
+        }
+
+        currentAccentColor = NormalizeAccentColorCode(accentColorCode);
+        ApplyTheme(currentTheme);
+        SaveCurrentAppSettings();
+        viewModel.StatusMessage = T("StatusAppearanceChanged");
+    }
+
     private void Window_Closing(object? sender, CancelEventArgs e)
+    {
+        SaveCurrentAppSettings();
+    }
+
+    private void SaveCurrentAppSettings()
     {
         try
         {
             AppSettingsStore.Save(new AppSettings
             {
                 LanguageCode = currentLanguage,
-                ThemeCode = currentTheme
+                ThemeCode = currentTheme,
+                FontSizeCode = currentFontSize,
+                DensityCode = currentDensity,
+                AccentColorCode = currentAccentColor
             });
         }
         catch (IOException)
         {
-            // Ignore close-time persistence errors to avoid blocking shutdown.
-            AppLogger.Error("App settings save failed on close (IO).");
+            AppLogger.Error("App settings save failed (IO).");
         }
         catch (UnauthorizedAccessException)
         {
-            // Ignore close-time persistence errors to avoid blocking shutdown.
-            AppLogger.Error("App settings save failed on close (Unauthorized).");
+            AppLogger.Error("App settings save failed (Unauthorized).");
         }
     }
 
@@ -1986,6 +2052,7 @@ public partial class MainWindow : Window
     {
         currentTheme = NormalizeThemeCode(themeCode);
         var isDark = string.Equals(themeCode, ThemeDark, StringComparison.OrdinalIgnoreCase);
+        var accentColor = ResolveAccentColor(currentAccentColor, isDark);
         Resources["AppBackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#101617" : "#F3F7F8"));
         Resources["CardBackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#1A2426" : "#FFFFFF"));
         Resources["CardBorderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#355055" : "#C8D8DA"));
@@ -1993,7 +2060,7 @@ public partial class MainWindow : Window
         Resources["TextPrimaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#E3F0F1" : "#172326"));
         Resources["TextSecondaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#9AB2B6" : "#53696E"));
         Resources["TextOnHeaderBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#D7ECEE" : "#D8EFF0"));
-        Resources["ButtonPrimaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#1A7F84" : "#156B6F"));
+        Resources["ButtonPrimaryBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(accentColor));
         Resources["ButtonDangerBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#B14A2A" : "#9A3412"));
         Resources["InputBackgroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#223033" : "#FFFFFF"));
         Resources["DatePickerTextBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#FFFFFF" : "#172326"));
@@ -2006,8 +2073,41 @@ public partial class MainWindow : Window
         Resources[SystemColors.ControlBrushKey] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#223033" : "#FFFFFF"));
         Resources[SystemColors.ControlTextBrushKey] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#E3F0F1" : "#172326"));
         Resources[SystemColors.GrayTextBrushKey] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#111111" : "#2A2A2A"));
-        Resources[SystemColors.HighlightBrushKey] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#4C9EA4" : "#4C9EA4"));
+        Resources[SystemColors.HighlightBrushKey] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(accentColor));
         Resources[SystemColors.HighlightTextBrushKey] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDark ? "#172326" : "#172326"));
+    }
+
+    private void ApplyFontSize(string fontSizeCode)
+    {
+        currentFontSize = NormalizeFontSizeCode(fontSizeCode);
+        FontSize = currentFontSize switch
+        {
+            FontSizeSmall => 11,
+            FontSizeLarge => 14,
+            _ => 12
+        };
+    }
+
+    private void ApplyDensity(string densityCode)
+    {
+        currentDensity = NormalizeDensityCode(densityCode);
+        var isCompact = string.Equals(currentDensity, DensityCompact, StringComparison.Ordinal);
+        Resources["TextBoxMinHeight"] = isCompact ? 28d : 32d;
+        Resources["ControlMinHeight"] = isCompact ? 30d : 36d;
+        Resources["DataGridRowHeight"] = isCompact ? 26d : 32d;
+        Resources["DataGridColumnHeaderHeight"] = isCompact ? 32d : 38d;
+        Resources["ButtonPadding"] = isCompact ? new Thickness(10, 4, 10, 4) : new Thickness(16, 8, 16, 8);
+    }
+
+    private static string ResolveAccentColor(string accentColorCode, bool isDark)
+    {
+        return NormalizeAccentColorCode(accentColorCode) switch
+        {
+            AccentBlue => isDark ? "#3B82F6" : "#2563EB",
+            AccentGreen => isDark ? "#22C55E" : "#15803D",
+            AccentPurple => isDark ? "#A78BFA" : "#7C3AED",
+            _ => isDark ? "#1A7F84" : "#156B6F"
+        };
     }
 
     private static string NormalizeLanguageCode(string? code)
@@ -2025,6 +2125,34 @@ public partial class MainWindow : Window
         return string.Equals(code, ThemeDark, StringComparison.OrdinalIgnoreCase)
             ? ThemeDark
             : ThemeLight;
+    }
+
+    private static string NormalizeFontSizeCode(string? code)
+    {
+        return code?.Trim().ToLowerInvariant() switch
+        {
+            FontSizeSmall => FontSizeSmall,
+            FontSizeLarge => FontSizeLarge,
+            _ => FontSizeNormal
+        };
+    }
+
+    private static string NormalizeDensityCode(string? code)
+    {
+        return string.Equals(code, DensityCompact, StringComparison.OrdinalIgnoreCase)
+            ? DensityCompact
+            : DensityComfortable;
+    }
+
+    private static string NormalizeAccentColorCode(string? code)
+    {
+        return code?.Trim().ToLowerInvariant() switch
+        {
+            AccentBlue => AccentBlue,
+            AccentGreen => AccentGreen,
+            AccentPurple => AccentPurple,
+            _ => AccentTeal
+        };
     }
 
     private static void SelectComboByTag(ComboBox comboBox, string tagValue)
@@ -2061,9 +2189,11 @@ public partial class MainWindow : Window
             ["UiButtonDeleteAquarium"] = "Supprimer contenant",
             ["UiTabSheet"] = "Fiche",
             ["UiTabParameters"] = "Parametres",
+            ["UiTabHealth"] = "Sante",
             ["UiTabPlants"] = "Plantes",
             ["UiTabPlantReference"] = "Referentiel plantes",
             ["UiTabPopulation"] = "Population",
+            ["UiTabAnimalReference"] = "Referentiel population",
             ["UiTabInterventions"] = "Interventions",
             ["UiTabSettings"] = "Parametrages",
             ["UiLabelName"] = "Nom",
@@ -2092,6 +2222,13 @@ public partial class MainWindow : Window
             ["UiLabelGh"] = "GH",
             ["UiLabelKh"] = "KH",
             ["UiLabelTemperature"] = "Temperature C",
+            ["UiWaterParameterAmmonia"] = "Amoniac",
+            ["UiWaterParameterNitrites"] = "Nitrites",
+            ["UiWaterParameterNitrates"] = "Nitrates",
+            ["UiWaterParameterPh"] = "pH",
+            ["UiWaterParameterGh"] = "GH",
+            ["UiWaterParameterKh"] = "KH",
+            ["UiWaterParameterTemperature"] = "Temperature",
             ["UiButtonAddMeasurement"] = "Ajouter la mesure",
             ["UiButtonDuplicateMeasurement"] = "Dupliquer la mesure",
             ["UiButtonDeleteMeasurement"] = "Supprimer la mesure",
@@ -2105,6 +2242,39 @@ public partial class MainWindow : Window
             ["UiPlantReferenceChoice"] = "Referentiel",
             ["UiPlantScientificName"] = "Nom scientifique",
             ["UiPlantRefNoData"] = "Aucune plante de reference pour ce type de contenant.",
+            ["UiPlantRefEnvironment"] = "Type",
+            ["UiPlantRefCommonName"] = "Nom courant",
+            ["UiPlantRefScientificName"] = "Nom scientifique",
+            ["UiPlantRefPhMin"] = "pH min",
+            ["UiPlantRefPhMax"] = "pH max",
+            ["UiPlantRefGhMin"] = "GH min",
+            ["UiPlantRefGhMax"] = "GH max",
+            ["UiPlantRefKhMin"] = "KH min",
+            ["UiPlantRefKhMax"] = "KH max",
+            ["UiPlantRefTempMin"] = "Temp min C",
+            ["UiPlantRefTempMax"] = "Temp max C",
+            ["UiPlantRefNh3Min"] = "Amoniac min",
+            ["UiPlantRefNh3Max"] = "Amoniac max",
+            ["UiPlantRefNo2Min"] = "Nitrites min",
+            ["UiPlantRefNo2Max"] = "Nitrites max",
+            ["UiPlantRefNo3Min"] = "Nitrates min",
+            ["UiPlantRefNo3Max"] = "Nitrates max",
+            ["UiPlantRefVolumeMin"] = "Volume min L",
+            ["UiPlantRefLight"] = "Lumiere",
+            ["UiPlantRefCo2"] = "CO2",
+            ["UiPlantRefFertilization"] = "Fertilisation",
+            ["UiPlantRefGrowth"] = "Croissance",
+            ["UiPlantRefPlacement"] = "Emplacement",
+            ["UiPlantRefBehavior"] = "Comportement",
+            ["UiPlantRefCompatibility"] = "Compatibilites",
+            ["UiPlantRefSourceUrl"] = "Source URL",
+            ["UiPlantRefSearchMore"] = "Recherches complementaires",
+            ["UiPlantRefCheckCompatibility"] = "Verifier compatibilite",
+            ["UiPlantRefEdit"] = "Modifier reference",
+            ["UiPlantRefApplyFilters"] = "Appliquer filtres",
+            ["UiPlantRefResetFilters"] = "Reinitialiser filtres",
+            ["UiPlantRefDelete"] = "Supprimer reference",
+            ["UiPlantRefResetCatalog"] = "Reinitialiser referentiel",
             ["UiPlantGrowth"] = "Croissance",
             ["UiGrowthSlow"] = "Lente",
             ["UiGrowthMedium"] = "Moyenne",
@@ -2158,6 +2328,27 @@ public partial class MainWindow : Window
             ["UiButtonSave"] = "Sauvegarder",
             ["UiLabelLanguage"] = "Langue",
             ["UiLabelTheme"] = "Theme",
+            ["UiSettingsDatabaseActions"] = "Base de donnees",
+            ["UiSettingsLocalization"] = "Langue",
+            ["UiSettingsAppearance"] = "Apparence",
+            ["UiApplicationLog"] = "Journal applicatif",
+            ["UiButtonRefreshLog"] = "Rafraichir log",
+            ["UiButtonOpenLog"] = "Ouvrir log",
+            ["UiLabelFontSize"] = "Taille de police",
+            ["UiFontSizeSmall"] = "Petite",
+            ["UiFontSizeNormal"] = "Normale",
+            ["UiFontSizeLarge"] = "Grande",
+            ["UiLabelDensity"] = "Densite",
+            ["UiDensityCompact"] = "Compacte",
+            ["UiDensityComfortable"] = "Confortable",
+            ["UiLabelAccentColor"] = "Couleur d'accentuation",
+            ["UiAccentTeal"] = "Sarcelle",
+            ["UiAccentBlue"] = "Bleu",
+            ["UiAccentGreen"] = "Vert",
+            ["UiAccentPurple"] = "Violet",
+            ["UiHealthLastMeasure"] = "Derniere mesure",
+            ["UiHealthGlobalStatus"] = "Statut global",
+            ["UiHealthTrends"] = "Tendances",
             ["UiHealthCharts"] = "Graphiques d'evolution",
             ["UiHealthPeriod"] = "Periode",
             ["UiHealthPeriod7"] = "7 jours",
@@ -2167,7 +2358,16 @@ public partial class MainWindow : Window
             ["UiHealthParameters"] = "Parametres a afficher",
             ["UiHealthTargetRange"] = "Plage cible",
             ["UiHealthNoChartData"] = "Pas assez de mesures pour tracer un graphe.",
+            ["UiHealthActions"] = "Actions conseillees",
             ["UiHealthNoData"] = "Aucune mesure disponible pour ce contenant.",
+            ["UiHealthParameterColumn"] = "Parametre",
+            ["UiHealthValueColumn"] = "Valeur",
+            ["UiHealthTrendColumn"] = "Tendance",
+            ["UiHealthAlertColumn"] = "Alerte",
+            ["HealthTrendNotAvailable"] = "N/A",
+            ["HealthTrendUp"] = "Hausse",
+            ["HealthTrendDown"] = "Baisse",
+            ["HealthTrendStable"] = "Stable",
             ["UiLangFrench"] = "Francais",
             ["UiLangEnglish"] = "Anglais",
             ["UiLangGerman"] = "Allemand",
@@ -2226,6 +2426,7 @@ public partial class MainWindow : Window
             ["StatusInterventionDeleted"] = "Intervention supprimee.",
             ["StatusLanguageChanged"] = "Langue appliquee.",
             ["StatusThemeChanged"] = "Theme applique.",
+            ["StatusAppearanceChanged"] = "Apparence appliquee.",
             ["HealthStatusNoData"] = "Aucune mesure",
             ["HealthStatusOk"] = "Stable",
             ["HealthStatusWarning"] = "Alerte moderee",
@@ -2265,9 +2466,11 @@ public partial class MainWindow : Window
             ["UiButtonDeleteAquarium"] = "Delete container",
             ["UiTabSheet"] = "Overview",
             ["UiTabParameters"] = "Parameters",
+            ["UiTabHealth"] = "Health",
             ["UiTabPlants"] = "Plants",
             ["UiTabPlantReference"] = "Plant Reference",
             ["UiTabPopulation"] = "Population",
+            ["UiTabAnimalReference"] = "Population Reference",
             ["UiTabInterventions"] = "Interventions",
             ["UiTabSettings"] = "Settings",
             ["UiLabelName"] = "Name",
@@ -2279,6 +2482,17 @@ public partial class MainWindow : Window
             ["UiWaterTypeFreshwaterTropical"] = "Freshwater",
             ["UiWaterTypeFreshwaterPond"] = "Freshwater pond",
             ["UiWaterTypeMarine"] = "Marine",
+            ["UiLabelAmmonia"] = "Ammonia mg/L",
+            ["UiLabelNitrites"] = "Nitrites mg/L",
+            ["UiLabelNitrates"] = "Nitrates mg/L",
+            ["UiLabelTemperature"] = "Temperature C",
+            ["UiWaterParameterAmmonia"] = "Ammonia",
+            ["UiWaterParameterNitrites"] = "Nitrites",
+            ["UiWaterParameterNitrates"] = "Nitrates",
+            ["UiWaterParameterPh"] = "pH",
+            ["UiWaterParameterGh"] = "GH",
+            ["UiWaterParameterKh"] = "KH",
+            ["UiWaterParameterTemperature"] = "Temperature",
             ["UiPlantReferenceLabelUnknown"] = "Plant reference - unknown type",
             ["UiPlantReferenceLabelFreshwater"] = "Plant reference - freshwater",
             ["UiPlantReferenceLabelPond"] = "Plant reference - fish pond",
@@ -2297,6 +2511,39 @@ public partial class MainWindow : Window
             ["UiPlantReferenceChoice"] = "Reference catalog",
             ["UiPlantScientificName"] = "Scientific name",
             ["UiPlantRefNoData"] = "No plant reference for this container type.",
+            ["UiPlantRefEnvironment"] = "Environment",
+            ["UiPlantRefCommonName"] = "Common name",
+            ["UiPlantRefScientificName"] = "Scientific name",
+            ["UiPlantRefPhMin"] = "pH min",
+            ["UiPlantRefPhMax"] = "pH max",
+            ["UiPlantRefGhMin"] = "GH min",
+            ["UiPlantRefGhMax"] = "GH max",
+            ["UiPlantRefKhMin"] = "KH min",
+            ["UiPlantRefKhMax"] = "KH max",
+            ["UiPlantRefTempMin"] = "Temp min C",
+            ["UiPlantRefTempMax"] = "Temp max C",
+            ["UiPlantRefNh3Min"] = "Ammonia min",
+            ["UiPlantRefNh3Max"] = "Ammonia max",
+            ["UiPlantRefNo2Min"] = "Nitrites min",
+            ["UiPlantRefNo2Max"] = "Nitrites max",
+            ["UiPlantRefNo3Min"] = "Nitrates min",
+            ["UiPlantRefNo3Max"] = "Nitrates max",
+            ["UiPlantRefVolumeMin"] = "Min volume L",
+            ["UiPlantRefLight"] = "Light",
+            ["UiPlantRefCo2"] = "CO2",
+            ["UiPlantRefFertilization"] = "Fertilization",
+            ["UiPlantRefGrowth"] = "Growth",
+            ["UiPlantRefPlacement"] = "Placement",
+            ["UiPlantRefBehavior"] = "Behavior",
+            ["UiPlantRefCompatibility"] = "Compatibility",
+            ["UiPlantRefSourceUrl"] = "Source URL",
+            ["UiPlantRefSearchMore"] = "Additional searches",
+            ["UiPlantRefCheckCompatibility"] = "Check compatibility",
+            ["UiPlantRefEdit"] = "Edit reference",
+            ["UiPlantRefApplyFilters"] = "Apply filters",
+            ["UiPlantRefResetFilters"] = "Reset filters",
+            ["UiPlantRefDelete"] = "Delete reference",
+            ["UiPlantRefResetCatalog"] = "Reset catalog",
             ["UiPlantGrowth"] = "Growth",
             ["UiGrowthSlow"] = "Slow",
             ["UiGrowthMedium"] = "Medium",
@@ -2353,6 +2600,27 @@ public partial class MainWindow : Window
             ["UiButtonSave"] = "Save",
             ["UiLabelLanguage"] = "Language",
             ["UiLabelTheme"] = "Theme",
+            ["UiSettingsDatabaseActions"] = "Database",
+            ["UiSettingsLocalization"] = "Language",
+            ["UiSettingsAppearance"] = "Appearance",
+            ["UiApplicationLog"] = "Application log",
+            ["UiButtonRefreshLog"] = "Refresh log",
+            ["UiButtonOpenLog"] = "Open log",
+            ["UiLabelFontSize"] = "Font size",
+            ["UiFontSizeSmall"] = "Small",
+            ["UiFontSizeNormal"] = "Normal",
+            ["UiFontSizeLarge"] = "Large",
+            ["UiLabelDensity"] = "Density",
+            ["UiDensityCompact"] = "Compact",
+            ["UiDensityComfortable"] = "Comfortable",
+            ["UiLabelAccentColor"] = "Accent color",
+            ["UiAccentTeal"] = "Teal",
+            ["UiAccentBlue"] = "Blue",
+            ["UiAccentGreen"] = "Green",
+            ["UiAccentPurple"] = "Purple",
+            ["UiHealthLastMeasure"] = "Last measurement",
+            ["UiHealthGlobalStatus"] = "Global status",
+            ["UiHealthTrends"] = "Trends",
             ["UiHealthCharts"] = "Trend charts",
             ["UiHealthPeriod"] = "Period",
             ["UiHealthPeriod7"] = "7 days",
@@ -2362,7 +2630,16 @@ public partial class MainWindow : Window
             ["UiHealthParameters"] = "Parameters to display",
             ["UiHealthTargetRange"] = "Target range",
             ["UiHealthNoChartData"] = "Not enough measurements to draw a chart.",
+            ["UiHealthActions"] = "Recommended actions",
             ["UiHealthNoData"] = "No measurement available for this container.",
+            ["UiHealthParameterColumn"] = "Parameter",
+            ["UiHealthValueColumn"] = "Value",
+            ["UiHealthTrendColumn"] = "Trend",
+            ["UiHealthAlertColumn"] = "Alert",
+            ["HealthTrendNotAvailable"] = "N/A",
+            ["HealthTrendUp"] = "Rising",
+            ["HealthTrendDown"] = "Falling",
+            ["HealthTrendStable"] = "Stable",
             ["UiLangFrench"] = "French",
             ["UiLangEnglish"] = "English",
             ["UiLangGerman"] = "German",
@@ -2421,6 +2698,7 @@ public partial class MainWindow : Window
             ["StatusInterventionDeleted"] = "Intervention deleted.",
             ["StatusLanguageChanged"] = "Language applied.",
             ["StatusThemeChanged"] = "Theme applied.",
+            ["StatusAppearanceChanged"] = "Appearance applied.",
             ["HealthStatusNoData"] = "No measurements",
             ["HealthStatusOk"] = "Stable",
             ["HealthStatusWarning"] = "Moderate alert",
@@ -2461,9 +2739,11 @@ public partial class MainWindow : Window
             ["UiButtonDeleteAquarium"] = "Behaelter loeschen",
             ["UiTabSheet"] = "Uebersicht",
             ["UiTabParameters"] = "Parameter",
+            ["UiTabHealth"] = "Gesundheit",
             ["UiTabPlants"] = "Pflanzen",
             ["UiTabPlantReference"] = "Pflanzenkatalog",
             ["UiTabPopulation"] = "Besatz",
+            ["UiTabAnimalReference"] = "Besatzkatalog",
             ["UiTabInterventions"] = "Eingriffe",
             ["UiTabSettings"] = "Einstellungen",
             ["UiLabelName"] = "Name",
@@ -2475,6 +2755,17 @@ public partial class MainWindow : Window
             ["UiWaterTypeFreshwaterTropical"] = "Suesswasser",
             ["UiWaterTypeFreshwaterPond"] = "Teich-Suesswasser",
             ["UiWaterTypeMarine"] = "Meerwasser",
+            ["UiLabelAmmonia"] = "Ammoniak mg/L",
+            ["UiLabelNitrites"] = "Nitrit mg/L",
+            ["UiLabelNitrates"] = "Nitrat mg/L",
+            ["UiLabelTemperature"] = "Temperatur C",
+            ["UiWaterParameterAmmonia"] = "Ammoniak",
+            ["UiWaterParameterNitrites"] = "Nitrit",
+            ["UiWaterParameterNitrates"] = "Nitrat",
+            ["UiWaterParameterPh"] = "pH",
+            ["UiWaterParameterGh"] = "GH",
+            ["UiWaterParameterKh"] = "KH",
+            ["UiWaterParameterTemperature"] = "Temperatur",
             ["UiPlantReferenceLabelUnknown"] = "Pflanzenkatalog - unbekannter Typ",
             ["UiPlantReferenceLabelFreshwater"] = "Pflanzenkatalog - Suesswasser",
             ["UiPlantReferenceLabelPond"] = "Pflanzenkatalog - Fischteich",
@@ -2493,6 +2784,39 @@ public partial class MainWindow : Window
             ["UiPlantReferenceChoice"] = "Pflanzenkatalog",
             ["UiPlantScientificName"] = "Wissenschaftlicher Name",
             ["UiPlantRefNoData"] = "Keine Pflanzenreferenz fuer diesen Behaeltertyp.",
+            ["UiPlantRefEnvironment"] = "Umgebung",
+            ["UiPlantRefCommonName"] = "Trivialname",
+            ["UiPlantRefScientificName"] = "Wissenschaftlicher Name",
+            ["UiPlantRefPhMin"] = "pH min",
+            ["UiPlantRefPhMax"] = "pH max",
+            ["UiPlantRefGhMin"] = "GH min",
+            ["UiPlantRefGhMax"] = "GH max",
+            ["UiPlantRefKhMin"] = "KH min",
+            ["UiPlantRefKhMax"] = "KH max",
+            ["UiPlantRefTempMin"] = "Temp. min C",
+            ["UiPlantRefTempMax"] = "Temp. max C",
+            ["UiPlantRefNh3Min"] = "Ammoniak min",
+            ["UiPlantRefNh3Max"] = "Ammoniak max",
+            ["UiPlantRefNo2Min"] = "Nitrit min",
+            ["UiPlantRefNo2Max"] = "Nitrit max",
+            ["UiPlantRefNo3Min"] = "Nitrat min",
+            ["UiPlantRefNo3Max"] = "Nitrat max",
+            ["UiPlantRefVolumeMin"] = "Mindestvolumen L",
+            ["UiPlantRefLight"] = "Licht",
+            ["UiPlantRefCo2"] = "CO2",
+            ["UiPlantRefFertilization"] = "Duengung",
+            ["UiPlantRefGrowth"] = "Wachstum",
+            ["UiPlantRefPlacement"] = "Platzierung",
+            ["UiPlantRefBehavior"] = "Verhalten",
+            ["UiPlantRefCompatibility"] = "Vertraeglichkeit",
+            ["UiPlantRefSourceUrl"] = "Quellen-URL",
+            ["UiPlantRefSearchMore"] = "Weitere Suchen",
+            ["UiPlantRefCheckCompatibility"] = "Kompatibilitaet pruefen",
+            ["UiPlantRefEdit"] = "Referenz bearbeiten",
+            ["UiPlantRefApplyFilters"] = "Filter anwenden",
+            ["UiPlantRefResetFilters"] = "Filter zuruecksetzen",
+            ["UiPlantRefDelete"] = "Referenz loeschen",
+            ["UiPlantRefResetCatalog"] = "Katalog zuruecksetzen",
             ["UiPlantGrowth"] = "Wachstum",
             ["UiGrowthSlow"] = "Langsam",
             ["UiGrowthMedium"] = "Mittel",
@@ -2548,6 +2872,27 @@ public partial class MainWindow : Window
             ["UiButtonSave"] = "Speichern",
             ["UiLabelLanguage"] = "Sprache",
             ["UiLabelTheme"] = "Design",
+            ["UiSettingsDatabaseActions"] = "Datenbank",
+            ["UiSettingsLocalization"] = "Sprache",
+            ["UiSettingsAppearance"] = "Darstellung",
+            ["UiApplicationLog"] = "Anwendungsprotokoll",
+            ["UiButtonRefreshLog"] = "Protokoll aktualisieren",
+            ["UiButtonOpenLog"] = "Protokoll oeffnen",
+            ["UiLabelFontSize"] = "Schriftgroesse",
+            ["UiFontSizeSmall"] = "Klein",
+            ["UiFontSizeNormal"] = "Normal",
+            ["UiFontSizeLarge"] = "Gross",
+            ["UiLabelDensity"] = "Dichte",
+            ["UiDensityCompact"] = "Kompakt",
+            ["UiDensityComfortable"] = "Komfortabel",
+            ["UiLabelAccentColor"] = "Akzentfarbe",
+            ["UiAccentTeal"] = "Petrol",
+            ["UiAccentBlue"] = "Blau",
+            ["UiAccentGreen"] = "Gruen",
+            ["UiAccentPurple"] = "Violett",
+            ["UiHealthLastMeasure"] = "Letzte Messung",
+            ["UiHealthGlobalStatus"] = "Gesamtstatus",
+            ["UiHealthTrends"] = "Trends",
             ["UiHealthCharts"] = "Trenddiagramme",
             ["UiHealthPeriod"] = "Zeitraum",
             ["UiHealthPeriod7"] = "7 Tage",
@@ -2557,7 +2902,16 @@ public partial class MainWindow : Window
             ["UiHealthParameters"] = "Anzuzeigende Parameter",
             ["UiHealthTargetRange"] = "Zielbereich",
             ["UiHealthNoChartData"] = "Nicht genug Messungen fuer ein Diagramm.",
+            ["UiHealthActions"] = "Empfohlene Aktionen",
             ["UiHealthNoData"] = "Keine Messung fuer diesen Behaelter verfuegbar.",
+            ["UiHealthParameterColumn"] = "Parameter",
+            ["UiHealthValueColumn"] = "Wert",
+            ["UiHealthTrendColumn"] = "Trend",
+            ["UiHealthAlertColumn"] = "Warnung",
+            ["HealthTrendNotAvailable"] = "N/A",
+            ["HealthTrendUp"] = "Steigend",
+            ["HealthTrendDown"] = "Fallend",
+            ["HealthTrendStable"] = "Stabil",
             ["UiLangFrench"] = "Franzoesisch",
             ["UiLangEnglish"] = "Englisch",
             ["UiLangGerman"] = "Deutsch",
@@ -2616,6 +2970,7 @@ public partial class MainWindow : Window
             ["StatusInterventionDeleted"] = "Eingriff geloescht.",
             ["StatusLanguageChanged"] = "Sprache angewendet.",
             ["StatusThemeChanged"] = "Design angewendet.",
+            ["StatusAppearanceChanged"] = "Darstellung angewendet.",
             ["HealthStatusNoData"] = "Keine Messungen",
             ["HealthStatusOk"] = "Stabil",
             ["HealthStatusWarning"] = "Mittlere Warnung",
@@ -2626,7 +2981,7 @@ public partial class MainWindow : Window
             ["HealthAlertCritical"] = "Kritisch",
             ["HealthActionNoData"] = "Fuege eine Wassermessung hinzu, um das Gesundheitsmonitoring zu aktivieren.",
             ["HealthActionOk"] = "Parameter im Zielbereich. Aktuelle Routine beibehalten.",
-            ["HealthActionWarningNitrates"] = "Teilwasserwechsel einplanen, um Nitrate zu senken.",
+            ["HealthActionWarningNitrates"] = "Teilwasserwechsel einplanen, um Nitratwerte zu senken.",
             ["HealthActionWarningPh"] = "pH pruefen und bei Bedarf schrittweise anpassen.",
             ["HealthActionWarningHardness"] = "GH/KH pruefen und Wechselwasser anpassen.",
             ["HealthActionWarningGeneric"] = "Entwicklung bei den naechsten Messungen beobachten.",
@@ -2658,7 +3013,7 @@ public partial class MainWindow : Window
 
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
-    private sealed record HealthRule(string Name, Func<WaterParameters, decimal?> Selector, decimal CriticalMin, decimal WarningMin, decimal WarningMax, decimal CriticalMax);
+    private sealed record HealthRule(string ParameterKey, Func<WaterParameters, decimal?> Selector, decimal CriticalMin, decimal WarningMin, decimal WarningMax, decimal CriticalMax);
 
     private const string WaterTypeFreshwaterTropical = "FreshwaterTropical";
     private const string WaterTypeMarine = "Marine";
@@ -2667,40 +3022,47 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private const string FilterAllCode = "All";
     private const string MeasurementPeriod30Code = "30";
     private const string MeasurementPeriod90Code = "90";
+    private const string ParameterAmmonia = "UiWaterParameterAmmonia";
+    private const string ParameterNitrites = "UiWaterParameterNitrites";
+    private const string ParameterNitrates = "UiWaterParameterNitrates";
+    private const string ParameterPh = "UiWaterParameterPh";
+    private const string ParameterGh = "UiWaterParameterGh";
+    private const string ParameterKh = "UiWaterParameterKh";
+    private const string ParameterTemperature = "UiWaterParameterTemperature";
 
     private Func<string, string> text = key => key;
     private string currentLanguage = "fr";
     private static readonly HealthRule[] FreshwaterHealthRules =
     [
-        new("Amoniac", m => m.AmmoniaMgPerLiter, 0m, 0m, 0.05m, 0.2m),
-        new("Nitrites", m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
-        new("Nitrates", m => m.NitratesMgPerLiter, 0m, 0m, 25m, 40m),
-        new("pH", m => m.Ph, 6m, 6.5m, 7.8m, 8.5m),
-        new("GH", m => m.Gh, 1m, 4m, 12m, 20m),
-        new("KH", m => m.Kh, 0m, 3m, 10m, 15m),
-        new("Temperature", m => m.TemperatureCelsius, 18m, 22m, 27m, 30m)
+        new(ParameterAmmonia, m => m.AmmoniaMgPerLiter, 0m, 0m, 0.05m, 0.2m),
+        new(ParameterNitrites, m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
+        new(ParameterNitrates, m => m.NitratesMgPerLiter, 0m, 0m, 25m, 40m),
+        new(ParameterPh, m => m.Ph, 6m, 6.5m, 7.8m, 8.5m),
+        new(ParameterGh, m => m.Gh, 1m, 4m, 12m, 20m),
+        new(ParameterKh, m => m.Kh, 0m, 3m, 10m, 15m),
+        new(ParameterTemperature, m => m.TemperatureCelsius, 18m, 22m, 27m, 30m)
     ];
 
     private static readonly HealthRule[] MarineHealthRules =
     [
-        new("Amoniac", m => m.AmmoniaMgPerLiter, 0m, 0m, 0.02m, 0.1m),
-        new("Nitrites", m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
-        new("Nitrates", m => m.NitratesMgPerLiter, 0m, 0m, 20m, 50m),
-        new("pH", m => m.Ph, 7.6m, 8.0m, 8.4m, 8.6m),
-        new("GH", m => m.Gh, 6m, 8m, 20m, 30m),
-        new("KH", m => m.Kh, 5m, 7m, 12m, 14m),
-        new("Temperature", m => m.TemperatureCelsius, 22m, 24m, 27m, 30m)
+        new(ParameterAmmonia, m => m.AmmoniaMgPerLiter, 0m, 0m, 0.02m, 0.1m),
+        new(ParameterNitrites, m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
+        new(ParameterNitrates, m => m.NitratesMgPerLiter, 0m, 0m, 20m, 50m),
+        new(ParameterPh, m => m.Ph, 7.6m, 8.0m, 8.4m, 8.6m),
+        new(ParameterGh, m => m.Gh, 6m, 8m, 20m, 30m),
+        new(ParameterKh, m => m.Kh, 5m, 7m, 12m, 14m),
+        new(ParameterTemperature, m => m.TemperatureCelsius, 22m, 24m, 27m, 30m)
     ];
 
     private static readonly HealthRule[] PondHealthRules =
     [
-        new("Amoniac", m => m.AmmoniaMgPerLiter, 0m, 0m, 0.05m, 0.2m),
-        new("Nitrites", m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
-        new("Nitrates", m => m.NitratesMgPerLiter, 0m, 0m, 40m, 80m),
-        new("pH", m => m.Ph, 6.5m, 7m, 8.5m, 9m),
-        new("GH", m => m.Gh, 1m, 6m, 18m, 25m),
-        new("KH", m => m.Kh, 3m, 5m, 14m, 18m),
-        new("Temperature", m => m.TemperatureCelsius, 4m, 10m, 26m, 32m)
+        new(ParameterAmmonia, m => m.AmmoniaMgPerLiter, 0m, 0m, 0.05m, 0.2m),
+        new(ParameterNitrites, m => m.NitritesMgPerLiter, 0m, 0m, 0.02m, 0.1m),
+        new(ParameterNitrates, m => m.NitratesMgPerLiter, 0m, 0m, 40m, 80m),
+        new(ParameterPh, m => m.Ph, 6.5m, 7m, 8.5m, 9m),
+        new(ParameterGh, m => m.Gh, 1m, 6m, 18m, 25m),
+        new(ParameterKh, m => m.Kh, 3m, 5m, 14m, 18m),
+        new(ParameterTemperature, m => m.TemperatureCelsius, 4m, 10m, 26m, 32m)
     ];
 
     private Aquarium selectedAquarium;
@@ -3462,6 +3824,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         UpdateContainerTypeOptions();
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
+        UpdateTrendParameterOptionLabels();
         foreach (var item in plantReferenceCatalog)
         {
             item.SetLanguage(currentLanguage);
@@ -3635,6 +3998,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         UpdateContainerTypeOptions();
         UpdateWaterTypeOptions();
+        UpdateTrendParameterOptionLabels();
         RebuildHealthDashboard();
         RebuildInventoryTotals();
         OnPropertyChanged(nameof(SelectedAquarium));
@@ -4554,7 +4918,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             hasWarning |= alert == text("HealthAlertWarning");
 
             HealthIndicators.Add(new HealthIndicator(
-                rule.Name,
+                text(rule.ParameterKey),
                 latestValue?.ToString("0.##") ?? "-",
                 BuildTargetRange(rule),
                 trend,
@@ -4589,13 +4953,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        AddTrendSeries("Amoniac", "mg/L", filtered, m => m.AmmoniaMgPerLiter);
-        AddTrendSeries("Nitrites", "mg/L", filtered, m => m.NitritesMgPerLiter);
-        AddTrendSeries("Nitrates", "mg/L", filtered, m => m.NitratesMgPerLiter);
-        AddTrendSeries("pH", string.Empty, filtered, m => m.Ph);
-        AddTrendSeries("GH", string.Empty, filtered, m => m.Gh);
-        AddTrendSeries("KH", string.Empty, filtered, m => m.Kh);
-        AddTrendSeries("Temperature", "C", filtered, m => m.TemperatureCelsius);
+        AddTrendSeries(ParameterAmmonia, "mg/L", filtered, m => m.AmmoniaMgPerLiter);
+        AddTrendSeries(ParameterNitrites, "mg/L", filtered, m => m.NitritesMgPerLiter);
+        AddTrendSeries(ParameterNitrates, "mg/L", filtered, m => m.NitratesMgPerLiter);
+        AddTrendSeries(ParameterPh, string.Empty, filtered, m => m.Ph);
+        AddTrendSeries(ParameterGh, string.Empty, filtered, m => m.Gh);
+        AddTrendSeries(ParameterKh, string.Empty, filtered, m => m.Kh);
+        AddTrendSeries(ParameterTemperature, "C", filtered, m => m.TemperatureCelsius);
     }
 
     private List<WaterParameters> GetTrendMeasurements(Aquarium aquarium)
@@ -4621,9 +4985,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             .ToList();
     }
 
-    private void AddTrendSeries(string name, string unit, IReadOnlyList<WaterParameters> measurements, Func<WaterParameters, decimal?> selector)
+    private void AddTrendSeries(string parameterKey, string unit, IReadOnlyList<WaterParameters> measurements, Func<WaterParameters, decimal?> selector)
     {
-        if (!TrendParameterOptions.Any(option => option.IsSelected && string.Equals(option.Name, name, StringComparison.OrdinalIgnoreCase)))
+        if (!TrendParameterOptions.Any(option => option.IsSelected && string.Equals(option.ParameterKey, parameterKey, StringComparison.Ordinal)))
         {
             return;
         }
@@ -4678,7 +5042,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         var xMidLabel = measurements[measurements.Count / 2].MeasuredAt.ToString("d", CultureInfo.CurrentCulture);
         var xEndLabel = measurements[^1].MeasuredAt.ToString("d", CultureInfo.CurrentCulture);
 
-        HealthTrendSeries.Add(new HealthTrendSeries(name, latestLabel, points, yTopLabel, yMidLabel, yBottomLabel, xStartLabel, xMidLabel, xEndLabel));
+        HealthTrendSeries.Add(new HealthTrendSeries(text(parameterKey), latestLabel, points, yTopLabel, yMidLabel, yBottomLabel, xStartLabel, xMidLabel, xEndLabel));
     }
 
     private static int DetermineYAxisDecimals(decimal min, decimal mid, decimal max)
@@ -5029,20 +5393,28 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     private void InitializeTrendParameterOptions()
     {
-        AddTrendOption("Amoniac");
-        AddTrendOption("Nitrites");
-        AddTrendOption("Nitrates");
-        AddTrendOption("pH");
-        AddTrendOption("GH");
-        AddTrendOption("KH");
-        AddTrendOption("Temperature");
+        AddTrendOption(ParameterAmmonia);
+        AddTrendOption(ParameterNitrites);
+        AddTrendOption(ParameterNitrates);
+        AddTrendOption(ParameterPh);
+        AddTrendOption(ParameterGh);
+        AddTrendOption(ParameterKh);
+        AddTrendOption(ParameterTemperature);
     }
 
-    private void AddTrendOption(string name)
+    private void AddTrendOption(string parameterKey)
     {
-        var option = new TrendParameterOption(name, true);
+        var option = new TrendParameterOption(parameterKey, text(parameterKey), true);
         option.PropertyChanged += OnTrendParameterOptionChanged;
         TrendParameterOptions.Add(option);
+    }
+
+    private void UpdateTrendParameterOptionLabels()
+    {
+        foreach (var option in TrendParameterOptions)
+        {
+            option.SetDisplayName(text(option.ParameterKey));
+        }
     }
 
     private void OnTrendParameterOptionChanged(object? sender, PropertyChangedEventArgs e)
@@ -5053,24 +5425,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private static string BuildTrend(decimal? latest, decimal? previous)
+    private string BuildTrend(decimal? latest, decimal? previous)
     {
         if (latest is null || previous is null)
         {
-            return "N/A";
+            return text("HealthTrendNotAvailable");
         }
 
         if (latest > previous)
         {
-            return "Hausse";
+            return text("HealthTrendUp");
         }
 
         if (latest < previous)
         {
-            return "Baisse";
+            return text("HealthTrendDown");
         }
 
-        return "Stable";
+        return text("HealthTrendStable");
     }
 
     private string BuildAlert(decimal? value, HealthRule rule)
@@ -5137,10 +5509,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private void AddActionsForWarning(WaterParameters latest, Aquarium aquarium)
     {
         var rules = GetHealthRulesForAquarium(aquarium);
-        var nitratesRule = rules.First(rule => rule.Name == "Nitrates");
-        var phRule = rules.First(rule => rule.Name == "pH");
-        var ghRule = rules.First(rule => rule.Name == "GH");
-        var khRule = rules.First(rule => rule.Name == "KH");
+        var nitratesRule = rules.First(rule => rule.ParameterKey == ParameterNitrates);
+        var phRule = rules.First(rule => rule.ParameterKey == ParameterPh);
+        var ghRule = rules.First(rule => rule.ParameterKey == ParameterGh);
+        var khRule = rules.First(rule => rule.ParameterKey == ParameterKh);
 
         if ((latest.NitratesMgPerLiter ?? 0m) > nitratesRule.WarningMax)
         {
@@ -5330,7 +5702,12 @@ public sealed class PlantReferenceItem : INotifyPropertyChanged
         }
     }
 
-    public string EnvironmentLabel => Environment == PlantReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce";
+    public string EnvironmentLabel => currentLanguage switch
+    {
+        "en" => Environment == PlantReferenceEnvironment.Marine ? "Marine" : "Freshwater",
+        "de" => Environment == PlantReferenceEnvironment.Marine ? "Meerwasser" : "Suesswasser",
+        _ => Environment == PlantReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce"
+    };
 
     public string LocalizedCommonName => currentLanguage switch
     {
@@ -5338,6 +5715,14 @@ public sealed class PlantReferenceItem : INotifyPropertyChanged
         "de" => FirstNonEmpty(CommonNameDe, CommonName, CommonNameFr, CommonNameEn, ScientificName),
         _ => FirstNonEmpty(CommonNameFr, CommonName, CommonNameEn, CommonNameDe, ScientificName)
     };
+
+    public string LocalizedLightNeed => ReferenceTextLocalizer.Localize(LightNeed, currentLanguage);
+    public string LocalizedCo2Need => ReferenceTextLocalizer.Localize(Co2Need, currentLanguage);
+    public string LocalizedFertilizationNeed => ReferenceTextLocalizer.Localize(FertilizationNeed, currentLanguage);
+    public string LocalizedGrowthSpeed => ReferenceTextLocalizer.Localize(GrowthSpeed, currentLanguage);
+    public string LocalizedRecommendedPlacement => ReferenceTextLocalizer.Localize(RecommendedPlacement, currentLanguage);
+    public string LocalizedBehavior => ReferenceTextLocalizer.Localize(Behavior, currentLanguage);
+    public string LocalizedCompatibility => ReferenceTextLocalizer.Localize(Compatibility, currentLanguage);
 
     public void SetLanguage(string languageCode)
     {
@@ -5348,7 +5733,15 @@ public sealed class PlantReferenceItem : INotifyPropertyChanged
         }
 
         currentLanguage = normalized;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EnvironmentLabel)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCommonName)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedLightNeed)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCo2Need)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedFertilizationNeed)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedGrowthSpeed)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedRecommendedPlacement)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedBehavior)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCompatibility)));
     }
 
     public bool IsPhIncompatible
@@ -5522,7 +5915,12 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
         }
     }
 
-    public string EnvironmentLabel => Environment == AnimalReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce";
+    public string EnvironmentLabel => currentLanguage switch
+    {
+        "en" => Environment == AnimalReferenceEnvironment.Marine ? "Marine" : "Freshwater",
+        "de" => Environment == AnimalReferenceEnvironment.Marine ? "Meerwasser" : "Suesswasser",
+        _ => Environment == AnimalReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce"
+    };
 
     public string LocalizedCommonName => currentLanguage switch
     {
@@ -5530,6 +5928,9 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
         "de" => FirstNonEmpty(CommonNameDe, CommonName, CommonNameFr, CommonNameEn, ScientificName),
         _ => FirstNonEmpty(CommonNameFr, CommonName, CommonNameEn, CommonNameDe, ScientificName)
     };
+
+    public string LocalizedBehavior => ReferenceTextLocalizer.Localize(Behavior, currentLanguage);
+    public string LocalizedCompatibility => ReferenceTextLocalizer.Localize(Compatibility, currentLanguage);
 
     public void SetLanguage(string languageCode)
     {
@@ -5540,7 +5941,10 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
         }
 
         currentLanguage = normalized;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EnvironmentLabel)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCommonName)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedBehavior)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCompatibility)));
     }
 
     public bool IsPhIncompatible { get => isPhIncompatible; set => SetFlag(ref isPhIncompatible, value, nameof(IsPhIncompatible)); }
@@ -5568,19 +5972,169 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
     }
 }
 
+internal static class ReferenceTextLocalizer
+{
+    private static readonly Dictionary<string, (string English, string German)> Values = new(StringComparer.Ordinal)
+    {
+        ["actif"] = ("Active", "Aktiv"),
+        ["arriere"] = ("Background", "Hintergrund"),
+        ["a surveiller avec coraux"] = ("Monitor with corals", "Mit Korallen beobachten"),
+        ["avant"] = ("Foreground", "Vordergrund"),
+        ["avant / decor"] = ("Foreground / decor", "Vordergrund / Dekor"),
+        ["avant / milieu"] = ("Foreground / midground", "Vordergrund / Mitte"),
+        ["avec especes de taille suffisante"] = ("With sufficiently sized species", "Mit ausreichend grossen Arten"),
+        ["bac specifique recommande"] = ("Species tank recommended", "Artbecken empfohlen"),
+        ["banc paisible"] = ("Peaceful schooling fish", "Friedlicher Schwarmfisch"),
+        ["bonne avec poissons calmes"] = ("Good with calm fish", "Gut mit ruhigen Fischen"),
+        ["bonne avec poissons phytophages"] = ("Good with herbivorous fish", "Gut mit pflanzenfressenden Fischen"),
+        ["bonne avec taille reguliere"] = ("Good with regular trimming", "Gut bei regelmaessigem Rueckschnitt"),
+        ["bonne avec vivipares"] = ("Good with livebearers", "Gut mit lebendgebaerenden Fischen"),
+        ["bonne contre nitrates"] = ("Good against nitrates", "Gut gegen Nitratwerte"),
+        ["bonne en aquascaping"] = ("Good for aquascaping", "Gut fuer Aquascaping"),
+        ["bonne en bac calme"] = ("Good in calm tanks", "Gut in ruhigen Becken"),
+        ["bonne en bac communautaire"] = ("Good in community tanks", "Gut im Gesellschaftsbecken"),
+        ["bonne en communautaire"] = ("Good in community tanks", "Gut im Gesellschaftsbecken"),
+        ["bonne en premier plan"] = ("Good foreground plant", "Gute Vordergrundpflanze"),
+        ["bonne pour alevins"] = ("Good for fry", "Gut fuer Jungfische"),
+        ["bonne pour debutants"] = ("Good for beginners", "Gut fuer Anfaenger"),
+        ["bulbe"] = ("Bulb", "Knolle"),
+        ["calcifiante"] = ("Calcifying", "Verkalkend"),
+        ["compacte"] = ("Compact", "Kompakt"),
+        ["communautaire calme"] = ("Calm community tank", "Ruhiges Gesellschaftsbecken"),
+        ["compatibilite elevee"] = ("High compatibility", "Hohe Vertraeglichkeit"),
+        ["compatible communautaire"] = ("Community compatible", "Gemeinschaftsbecken geeignet"),
+        ["compatible recifal"] = ("Reef compatible", "Riffgeeignet"),
+        ["demande eau propre"] = ("Requires clean water", "Benoetigt sauberes Wasser"),
+        ["en groupe 6+"] = ("In groups of 6+", "In Gruppen ab 6"),
+        ["epiphyte"] = ("Epiphyte", "Epiphyt"),
+        ["espace important"] = ("Needs significant space", "Braucht viel Platz"),
+        ["eviter poissons agressifs"] = ("Avoid aggressive fish", "Aggressive Fische vermeiden"),
+        ["excellente anti-algues"] = ("Excellent against algae", "Ausgezeichnet gegen Algen"),
+        ["excellente pour crevettes"] = ("Excellent for shrimp", "Ausgezeichnet fuer Garnelen"),
+        ["faible"] = ("Low", "Niedrig"),
+        ["faible a moyenne"] = ("Low to medium", "Niedrig bis mittel"),
+        ["feuille en dentelle"] = ("Lace leaves", "Spitzenartige Blaetter"),
+        ["feuilles coriaces"] = ("Tough leaves", "Derbe Blaetter"),
+        ["feuilles ondulees"] = ("Wavy leaves", "Gewellte Blaetter"),
+        ["flottante / arriere"] = ("Floating / background", "Schwimmpflanze / Hintergrund"),
+        ["forte"] = ("High", "Stark"),
+        ["fougere aquatique"] = ("Aquatic fern", "Wasserfarn"),
+        ["fougere epiphyte"] = ("Epiphytic fern", "Epiphytischer Farn"),
+        ["gazonnante"] = ("Carpeting", "Teppichbildend"),
+        ["gregaire"] = ("Gregarious", "Gesellig"),
+        ["gregaire de fond"] = ("Gregarious bottom-dweller", "Geselliger Bodenbewohner"),
+        ["grandes feuilles rubanees"] = ("Large ribbon-like leaves", "Grosse bandfoermige Blaetter"),
+        ["hepatique flottante"] = ("Floating liverwort", "Schwimmendes Lebermoos"),
+        ["hierarchique"] = ("Hierarchical", "Hierarchisch"),
+        ["lente"] = ("Slow", "Langsam"),
+        ["longues feuilles"] = ("Long leaves", "Lange Blaetter"),
+        ["male seul"] = ("Single male", "Maennchen einzeln"),
+        ["milieu"] = ("Midground", "Mitte"),
+        ["milieu / arriere"] = ("Midground / background", "Mitte / Hintergrund"),
+        ["mousse"] = ("Moss", "Moos"),
+        ["moyen"] = ("Medium", "Mittel"),
+        ["moyenne"] = ("Medium", "Mittel"),
+        ["moyenne a elevee"] = ("Medium to high", "Mittel bis hoch"),
+        ["moyenne a forte"] = ("Medium to high", "Mittel bis stark"),
+        ["nageur rapide"] = ("Fast swimmer", "Schneller Schwimmer"),
+        ["optionnel"] = ("Optional", "Optional"),
+        ["peut devenir envahissante"] = ("Can become invasive", "Kann wuchernd werden"),
+        ["peut etre territorial"] = ("Can be territorial", "Kann territorial sein"),
+        ["peut flotter"] = ("Can float", "Kann schwimmen"),
+        ["preferer courant doux"] = ("Prefers gentle current", "Bevorzugt sanfte Stroemung"),
+        ["racine / roche"] = ("Root / rock", "Wurzel / Stein"),
+        ["racines / roches"] = ("Roots / rocks", "Wurzeln / Steine"),
+        ["rapide"] = ("Fast", "Schnell"),
+        ["refuge / decor"] = ("Refugium / decor", "Refugium / Dekor"),
+        ["robuste"] = ("Hardy", "Robust"),
+        ["roche / racine"] = ("Rock / root", "Stein / Wurzel"),
+        ["roches vivantes"] = ("Live rock", "Lebende Steine"),
+        ["rosette compacte"] = ("Compact rosette", "Kompakte Rosette"),
+        ["rosette ondulee"] = ("Wavy rosette", "Gewellte Rosette"),
+        ["rouge decorative"] = ("Decorative red", "Dekorativ rot"),
+        ["surface / arriere"] = ("Surface / background", "Oberflaeche / Hintergrund"),
+        ["surface / gazon"] = ("Surface / carpet", "Oberflaeche / Teppich"),
+        ["tapis rampant"] = ("Creeping carpet", "Kriechender Teppich"),
+        ["territorial"] = ("Territorial", "Territorial"),
+        ["territorial modere"] = ("Moderately territorial", "Maessig territorial"),
+        ["tige"] = ("Stem plant", "Stengelpflanze"),
+        ["tige fine"] = ("Fine stem plant", "Feine Stengelpflanze"),
+        ["tres adaptable"] = ("Very adaptable", "Sehr anpassungsfaehig"),
+        ["tres facile"] = ("Very easy", "Sehr einfach"),
+        ["tres rapide"] = ("Very fast", "Sehr schnell"),
+        ["vif"] = ("Lively", "Lebhaft")
+    };
+
+    public static string Localize(string value, string languageCode)
+    {
+        if (string.IsNullOrWhiteSpace(value) || languageCode == "fr")
+        {
+            return value;
+        }
+
+        return Values.TryGetValue(Normalize(value), out var localized)
+            ? languageCode == "de" ? localized.German : localized.English
+            : value;
+    }
+
+    private static string Normalize(string value)
+    {
+        var normalized = value.Trim().ToLowerInvariant()
+            .Replace('à', 'a')
+            .Replace('â', 'a')
+            .Replace('ä', 'a')
+            .Replace('ç', 'c')
+            .Replace('é', 'e')
+            .Replace('è', 'e')
+            .Replace('ê', 'e')
+            .Replace('ë', 'e')
+            .Replace('î', 'i')
+            .Replace('ï', 'i')
+            .Replace('ô', 'o')
+            .Replace('ö', 'o')
+            .Replace('ù', 'u')
+            .Replace('û', 'u')
+            .Replace('ü', 'u');
+
+        while (normalized.Contains("  ", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        return normalized;
+    }
+}
+
 public sealed class TrendParameterOption : INotifyPropertyChanged
 {
     private bool isSelected;
+    private string name;
 
-    public TrendParameterOption(string name, bool isSelected)
+    public TrendParameterOption(string parameterKey, string name, bool isSelected)
     {
-        Name = name;
+        ParameterKey = parameterKey;
+        this.name = name;
         this.isSelected = isSelected;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string Name { get; }
+    public string ParameterKey { get; }
+
+    public string Name
+    {
+        get => name;
+        private set
+        {
+            if (name == value)
+            {
+                return;
+            }
+
+            name = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+        }
+    }
 
     public bool IsSelected
     {
@@ -5595,5 +6149,10 @@ public sealed class TrendParameterOption : INotifyPropertyChanged
             isSelected = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
         }
+    }
+
+    public void SetDisplayName(string value)
+    {
+        Name = value;
     }
 }

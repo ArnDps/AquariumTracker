@@ -44,4 +44,7 @@ public sealed class AppSettings
 {
     public string LanguageCode { get; set; } = "fr";
     public string ThemeCode { get; set; } = "light";
+    public string FontSizeCode { get; set; } = "normal";
+    public string DensityCode { get; set; } = "comfortable";
+    public string AccentColorCode { get; set; } = "teal";
 }
