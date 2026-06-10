@@ -17,6 +17,10 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     private const int MinimumPlantEssentialParameterCount = 4;
     private const int MinimumAnimalEssentialParameterCount = 4;
     private const string FreshwaterAquariumFishListUrl = "https://en.wikipedia.org/wiki/List_of_freshwater_aquarium_fish_species";
+    private const string ContainerTypeAquarium = "Aquarium";
+    private const string ContainerTypeFishPond = "FishPond";
+    private const string WaterTypeFreshwaterTropical = "FreshwaterTropical";
+    private const string WaterTypeMarine = "Marine";
 
     private static readonly HashSet<string> ChildTables =
     [
@@ -50,6 +54,13 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         await EnsureAquariumChildSchemaUpgradedAsync(connection, cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
+        var containerType = NormalizeContainerTypeCode(aquarium.ContainerType);
+        var waterType = IsFishPondContainerType(containerType)
+            ? WaterTypeFreshwaterTropical
+            : NormalizeWaterTypeCode(aquarium.WaterType);
+        aquarium.ContainerType = containerType;
+        aquarium.WaterType = waterType;
+
         await ExecuteAsync(
             connection,
             transaction,
@@ -68,8 +79,8 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             Parameter("@Id", aquarium.Id.ToString()),
             Parameter("@Name", aquarium.Name),
             Parameter("@VolumeLiters", aquarium.VolumeLiters),
-            Parameter("@ContainerType", aquarium.ContainerType),
-            Parameter("@WaterType", aquarium.WaterType),
+            Parameter("@ContainerType", containerType),
+            Parameter("@WaterType", waterType),
             Parameter("@StartedOn", aquarium.StartedOn.ToDateTime(TimeOnly.MinValue)),
             Parameter("@Notes", aquarium.Notes));
 
@@ -235,11 +246,16 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Id = ReadGuid(reader, 0),
                 Name = reader.GetString(1),
                 VolumeLiters = reader.GetDecimal(2),
-                ContainerType = reader.GetString(3),
-                WaterType = reader.GetString(4),
+                ContainerType = NormalizeContainerTypeCode(reader.GetString(3)),
+                WaterType = NormalizeWaterTypeCode(reader.GetString(4)),
                 StartedOn = DateOnly.FromDateTime(reader.GetDateTime(5)),
                 Notes = reader.GetString(6)
             };
+
+            if (IsFishPondContainerType(aquarium.ContainerType))
+            {
+                aquarium.WaterType = WaterTypeFreshwaterTropical;
+            }
 
             aquariums[aquarium.Id] = aquarium;
         }
@@ -533,6 +549,50 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         return Math.Max(1, Math.Abs(quantity));
     }
 
+    private static bool IsFishPondContainerType(string? containerType)
+    {
+        return NormalizeContainerTypeCode(containerType) == ContainerTypeFishPond;
+    }
+
+    private static string NormalizeContainerTypeCode(string? containerType)
+    {
+        if (string.IsNullOrWhiteSpace(containerType))
+        {
+            return ContainerTypeAquarium;
+        }
+
+        var normalized = containerType.Trim().ToLowerInvariant();
+        if (string.Equals(normalized, ContainerTypeFishPond.ToLowerInvariant(), StringComparison.Ordinal)
+            || normalized.Contains("bassin", StringComparison.Ordinal)
+            || normalized.Contains("pond", StringComparison.Ordinal)
+            || normalized.Contains("teich", StringComparison.Ordinal))
+        {
+            return ContainerTypeFishPond;
+        }
+
+        return ContainerTypeAquarium;
+    }
+
+    private static string NormalizeWaterTypeCode(string? waterType)
+    {
+        if (string.IsNullOrWhiteSpace(waterType))
+        {
+            return WaterTypeFreshwaterTropical;
+        }
+
+        var normalized = waterType.Trim().ToLowerInvariant();
+        if (string.Equals(normalized, WaterTypeMarine.ToLowerInvariant(), StringComparison.Ordinal)
+            || normalized.Contains("mer", StringComparison.Ordinal)
+            || normalized.Contains("sea", StringComparison.Ordinal)
+            || normalized.Contains("marine", StringComparison.Ordinal)
+            || normalized.Contains("meer", StringComparison.Ordinal))
+        {
+            return WaterTypeMarine;
+        }
+
+        return WaterTypeFreshwaterTropical;
+    }
+
     private static TEnum ParseEnumOrDefault<TEnum>(string value, TEnum fallback)
         where TEnum : struct
     {
@@ -696,7 +756,15 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         {
             "ALTER TABLE Aquariums ADD COLUMN ContainerType VARCHAR(40) NULL AFTER VolumeLiters;",
             "UPDATE Aquariums SET ContainerType = 'Aquarium' WHERE ContainerType IS NULL OR ContainerType = '';",
+            "UPDATE Aquariums SET ContainerType = 'FishPond' WHERE LOWER(ContainerType) LIKE '%bassin%' OR LOWER(ContainerType) LIKE '%pond%' OR LOWER(ContainerType) LIKE '%teich%';",
+            "UPDATE Aquariums SET ContainerType = 'Aquarium' WHERE ContainerType <> 'FishPond';",
             "ALTER TABLE Aquariums MODIFY ContainerType VARCHAR(40) NOT NULL;",
+            "ALTER TABLE Aquariums ADD COLUMN WaterType VARCHAR(80) NULL AFTER ContainerType;",
+            "UPDATE Aquariums SET WaterType = 'FreshwaterTropical' WHERE WaterType IS NULL OR WaterType = '';",
+            "UPDATE Aquariums SET WaterType = 'Marine' WHERE LOWER(WaterType) LIKE '%marine%' OR LOWER(WaterType) LIKE '%mer%' OR LOWER(WaterType) LIKE '%sea%' OR LOWER(WaterType) LIKE '%meer%';",
+            "UPDATE Aquariums SET WaterType = 'FreshwaterTropical' WHERE WaterType <> 'Marine';",
+            "UPDATE Aquariums SET WaterType = 'FreshwaterTropical' WHERE ContainerType = 'FishPond';",
+            "ALTER TABLE Aquariums MODIFY WaterType VARCHAR(80) NOT NULL;",
             "ALTER TABLE AquariumPlants ADD COLUMN AddedOn DATE NULL AFTER AquariumId;",
             "UPDATE AquariumPlants SET AddedOn = CURRENT_DATE WHERE AddedOn IS NULL;",
             "ALTER TABLE AquariumPlants MODIFY AddedOn DATE NOT NULL;",

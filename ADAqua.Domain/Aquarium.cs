@@ -8,7 +8,7 @@ public sealed class Aquarium
     public string Name { get; set; } = string.Empty;
     public decimal VolumeLiters { get; set; }
     public string ContainerType { get; set; } = "Aquarium";
-    public string WaterType { get; set; } = "Eau douce";
+    public string WaterType { get; set; } = "FreshwaterTropical";
     public DateOnly StartedOn { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     public string Notes { get; set; } = string.Empty;
     public ObservableCollection<WaterParameters> Measurements { get; } = [];

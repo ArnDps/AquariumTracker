@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -29,8 +31,11 @@ public partial class MainWindow : Window
     private MySqlAquariumRepository? repository;
     private string? activeConnectionString;
     private bool isApplyingSettings;
+    private bool isLoadingAquariums;
     private bool isInlineGridPersistQueued;
     private bool isInlineGridPersisting;
+    private bool isSheetPersisting;
+    private bool isClassificationPersisting;
     private string currentLanguage = LanguageFrench;
     private string currentTheme = ThemeLight;
 
@@ -87,7 +92,7 @@ public partial class MainWindow : Window
     private async void ViewModelOnSelectedAquariumWaterTypeChanged(object? sender, EventArgs e)
     {
         ApplyWaterParameterValidationRanges();
-        await PersistSelectedAquariumWaterTypeAsync();
+        await PersistSelectedAquariumClassificationAsync();
     }
 
     private static (string? ConnectionString, string MessageKey) ResolveConnectionConfiguration()
@@ -183,20 +188,31 @@ public partial class MainWindow : Window
             return;
         }
 
-        var aquariums = await repository.GetAllAsync();
-        var plantReferences = await repository.GetPlantReferencesAsync();
-        var animalReferences = await repository.GetAnimalReferencesAsync();
-        viewModel.SetPlantReferences(plantReferences);
-        viewModel.SetAnimalReferences(animalReferences);
-        viewModel.ReplaceAquariums(aquariums);
-        if (selectedAquariumId is not null)
+        isLoadingAquariums = true;
+        try
         {
-            viewModel.SelectAquarium(selectedAquariumId.Value);
-        }
+            var aquariums = await repository.GetAllAsync();
+            var plantReferences = await repository.GetPlantReferencesAsync();
+            var animalReferences = await repository.GetAnimalReferencesAsync();
+            viewModel.SetPlantReferences(plantReferences);
+            viewModel.SetAnimalReferences(animalReferences);
+            viewModel.ReplaceAquariums(aquariums);
+            if (selectedAquariumId is not null)
+            {
+                viewModel.SelectAquarium(selectedAquariumId.Value);
+            }
 
-        viewModel.StatusMessage = aquariums.Count == 0
-            ? T("StatusConnectedNoAquarium")
-            : string.Format(T("StatusConnectedAquariumCount"), aquariums.Count);
+            AppLogger.Info(
+                $"Loaded selected aquarium classification: ContainerType={viewModel.SelectedAquarium.ContainerType}, WaterType={viewModel.SelectedAquarium.WaterType}, SelectedWaterType={viewModel.SelectedAquariumWaterType}.");
+
+            viewModel.StatusMessage = aquariums.Count == 0
+                ? T("StatusConnectedNoAquarium")
+                : string.Format(T("StatusConnectedAquariumCount"), aquariums.Count);
+        }
+        finally
+        {
+            isLoadingAquariums = false;
+        }
     }
 
     private async Task ReloadPlantReferencesAsync()
@@ -287,6 +303,92 @@ public partial class MainWindow : Window
         }
 
         return true;
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.F)
+        {
+            FocusCurrentSearchBox();
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.S)
+        {
+            Save_Click(this, new RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.D && MainTabControl.SelectedIndex == 1)
+        {
+            DuplicateMeasurement_Click(this, new RoutedEventArgs());
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.Escape)
+        {
+            viewModel.ClearGridFilters();
+            e.Handled = true;
+            return;
+        }
+
+        if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.Delete && !IsTextEntryFocused())
+        {
+            DeleteCurrentGridSelection();
+            e.Handled = true;
+        }
+    }
+
+    private void FocusCurrentSearchBox()
+    {
+        var target = MainTabControl.SelectedIndex switch
+        {
+            1 => MeasurementSearchBox,
+            3 => PlantSearchBox,
+            4 => PopulationSearchBox,
+            5 => InterventionSearchBox,
+            _ => null
+        };
+
+        if (target is null)
+        {
+            return;
+        }
+
+        target.Focus();
+        target.SelectAll();
+    }
+
+    private void DeleteCurrentGridSelection()
+    {
+        switch (MainTabControl.SelectedIndex)
+        {
+            case 1:
+                DeleteMeasurement_Click(this, new RoutedEventArgs());
+                break;
+            case 3:
+                DeletePlant_Click(this, new RoutedEventArgs());
+                break;
+            case 4:
+                DeletePopulation_Click(this, new RoutedEventArgs());
+                break;
+            case 5:
+                DeleteIntervention_Click(this, new RoutedEventArgs());
+                break;
+        }
+    }
+
+    private static bool IsTextEntryFocused()
+    {
+        return Keyboard.FocusedElement is TextBoxBase or ComboBox or DatePicker;
+    }
+
+    private void ClearGridFilters_Click(object sender, RoutedEventArgs e)
+    {
+        viewModel.ClearGridFilters();
     }
 
     private static IEnumerable<TChild> FindVisualChildren<TChild>(DependencyObject root) where TChild : DependencyObject
@@ -625,24 +727,126 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task PersistSelectedAquariumWaterTypeAsync()
+    private async void SheetField_LostFocus(object sender, RoutedEventArgs e)
     {
+        if (!IsLoaded || isLoadingAquariums)
+        {
+            return;
+        }
+
+        if (sender is TextBox textBox)
+        {
+            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+        }
+
+        await PersistSelectedAquariumSheetAsync();
+    }
+
+    private async void SheetDatePicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded || isLoadingAquariums)
+        {
+            return;
+        }
+
+        if (sender is DatePicker datePicker)
+        {
+            datePicker.GetBindingExpression(DatePicker.SelectedDateProperty)?.UpdateSource();
+        }
+
+        await PersistSelectedAquariumSheetAsync();
+    }
+
+    private async void SheetClassificationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded || isLoadingAquariums)
+        {
+            return;
+        }
+
+        if (sender is ComboBox comboBox)
+        {
+            comboBox.GetBindingExpression(ComboBox.SelectedItemProperty)?.UpdateSource();
+        }
+
+        ApplyWaterParameterValidationRanges();
+        await PersistSelectedAquariumClassificationAsync();
+    }
+
+    private async Task PersistSelectedAquariumSheetAsync()
+    {
+        if (isSheetPersisting)
+        {
+            return;
+        }
+
         if (repository is null)
         {
             viewModel.StatusMessage = T("StatusLocalModeConfigure");
             return;
         }
 
+        if (HasValidationErrors())
+        {
+            viewModel.StatusMessage = T("StatusSaveInvalidInput");
+            return;
+        }
+
+        var aquarium = viewModel.SelectedAquarium;
         try
         {
+            isSheetPersisting = true;
+            AppLogger.Info($"Saving selected aquarium sheet: AquariumId={aquarium.Id}, VolumeLiters={aquarium.VolumeLiters}.");
             await repository.InitializeAsync();
-            await repository.SaveAsync(viewModel.SelectedAquarium);
+            await repository.SaveAsync(aquarium);
             viewModel.StatusMessage = T("StatusAquariumSaved");
         }
         catch (Exception exception)
         {
             viewModel.StatusMessage = $"{T("StatusSaveFailed")} {exception.Message}";
-            AppLogger.Error("Water type persist failed.", exception);
+            AppLogger.Error("Sheet persist failed.", exception);
+        }
+        finally
+        {
+            isSheetPersisting = false;
+        }
+    }
+
+    private async Task PersistSelectedAquariumClassificationAsync()
+    {
+        if (isClassificationPersisting)
+        {
+            return;
+        }
+
+        if (repository is null)
+        {
+            viewModel.StatusMessage = T("StatusLocalModeConfigure");
+            return;
+        }
+
+        var aquarium = viewModel.SelectedAquarium;
+        var aquariumId = aquarium.Id;
+        aquarium.ContainerType = viewModel.SelectedAquariumContainerType;
+        aquarium.WaterType = viewModel.SelectedAquariumWaterType;
+
+        try
+        {
+            isClassificationPersisting = true;
+            AppLogger.Info($"Saving selected aquarium classification: AquariumId={aquariumId}, ContainerType={aquarium.ContainerType}, WaterType={aquarium.WaterType}.");
+            await repository.InitializeAsync();
+            await repository.SaveAsync(aquarium);
+            await LoadAquariumsAsync(aquariumId);
+            viewModel.StatusMessage = T("StatusAquariumSaved");
+        }
+        catch (Exception exception)
+        {
+            viewModel.StatusMessage = $"{T("StatusSaveFailed")} {exception.Message}";
+            AppLogger.Error("Classification persist failed.", exception);
+        }
+        finally
+        {
+            isClassificationPersisting = false;
         }
     }
 
@@ -1969,6 +2173,16 @@ public partial class MainWindow : Window
             ["UiLangGerman"] = "Allemand",
             ["UiThemeLight"] = "Clair",
             ["UiThemeDark"] = "Sombre",
+            ["UiFilterSearch"] = "Recherche",
+            ["UiFilterPeriod"] = "Periode",
+            ["UiFilterMovement"] = "Mouvement",
+            ["UiFilterPopulationType"] = "Famille",
+            ["UiFilterInterventionType"] = "Type d'intervention",
+            ["UiFilterAll"] = "Tout",
+            ["UiMeasurementPeriod30"] = "30 jours",
+            ["UiMeasurementPeriod90"] = "90 jours",
+            ["UiClearFilters"] = "Effacer filtres",
+            ["UiNoRowsMatchFilters"] = "Aucune ligne ne correspond aux filtres.",
             ["UiReferenceSearchCriteriaTitle"] = "Criteres de recherche",
             ["UiReferenceSearchCriteriaIntro"] = "Choisis les criteres utilises pour filtrer les fiches candidates avant insertion dans le referentiel.",
             ["UiReferenceSearchMinimumParameterGroups"] = "Nombre minimal de groupes de parametres",
@@ -2154,6 +2368,16 @@ public partial class MainWindow : Window
             ["UiLangGerman"] = "German",
             ["UiThemeLight"] = "Light",
             ["UiThemeDark"] = "Dark",
+            ["UiFilterSearch"] = "Search",
+            ["UiFilterPeriod"] = "Period",
+            ["UiFilterMovement"] = "Movement",
+            ["UiFilterPopulationType"] = "Family",
+            ["UiFilterInterventionType"] = "Intervention type",
+            ["UiFilterAll"] = "All",
+            ["UiMeasurementPeriod30"] = "30 days",
+            ["UiMeasurementPeriod90"] = "90 days",
+            ["UiClearFilters"] = "Clear filters",
+            ["UiNoRowsMatchFilters"] = "No row matches the filters.",
             ["UiReferenceSearchCriteriaTitle"] = "Search criteria",
             ["UiReferenceSearchCriteriaIntro"] = "Choose the criteria used to filter candidate records before inserting them into the reference catalog.",
             ["UiReferenceSearchMinimumParameterGroups"] = "Minimum number of parameter groups",
@@ -2339,6 +2563,16 @@ public partial class MainWindow : Window
             ["UiLangGerman"] = "Deutsch",
             ["UiThemeLight"] = "Hell",
             ["UiThemeDark"] = "Dunkel",
+            ["UiFilterSearch"] = "Suche",
+            ["UiFilterPeriod"] = "Zeitraum",
+            ["UiFilterMovement"] = "Bewegung",
+            ["UiFilterPopulationType"] = "Familie",
+            ["UiFilterInterventionType"] = "Eingriffstyp",
+            ["UiFilterAll"] = "Alle",
+            ["UiMeasurementPeriod30"] = "30 Tage",
+            ["UiMeasurementPeriod90"] = "90 Tage",
+            ["UiClearFilters"] = "Filter loeschen",
+            ["UiNoRowsMatchFilters"] = "Keine Zeile entspricht den Filtern.",
             ["UiReferenceSearchCriteriaTitle"] = "Suchkriterien",
             ["UiReferenceSearchCriteriaIntro"] = "Waehle die Kriterien, mit denen Kandidaten vor dem Einfuegen in den Katalog gefiltert werden.",
             ["UiReferenceSearchMinimumParameterGroups"] = "Mindestanzahl von Parametergruppen",
@@ -2430,6 +2664,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private const string WaterTypeMarine = "Marine";
     private const string ContainerTypeAquarium = "Aquarium";
     private const string ContainerTypeFishPond = "FishPond";
+    private const string FilterAllCode = "All";
+    private const string MeasurementPeriod30Code = "30";
+    private const string MeasurementPeriod90Code = "90";
 
     private Func<string, string> text = key => key;
     private string currentLanguage = "fr";
@@ -2504,6 +2741,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string animalFilterAmmoniaMax = string.Empty;
     private string animalFilterNitritesMax = string.Empty;
     private string animalFilterNitratesMax = string.Empty;
+    private string measurementSearchText = string.Empty;
+    private string measurementPeriodFilterCode = FilterAllCode;
+    private string plantSearchText = string.Empty;
+    private string plantMovementFilterCode = FilterAllCode;
+    private string populationSearchText = string.Empty;
+    private string populationMovementFilterCode = FilterAllCode;
+    private string populationTypeFilterCode = FilterAllCode;
+    private string interventionSearchText = string.Empty;
+    private string interventionTypeFilterCode = FilterAllCode;
+    private ICollectionView? measurementsView;
+    private ICollectionView? plantsView;
+    private ICollectionView? populationView;
+    private ICollectionView? interventionsView;
+    private ContainerTypeOption? selectedAquariumContainerTypeOption;
+    private WaterTypeOption? selectedAquariumWaterTypeOption;
     private int selectedTrendPeriodDays = 30;
     private int interventionLocalizationVersion;
     private int movementLocalizationVersion;
@@ -2513,15 +2765,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel()
     {
         InitializeTrendParameterOptions();
+        selectedAquarium = CreateDefaultAquarium();
+        Aquariums.Add(selectedAquarium);
         UpdateContainerTypeOptions();
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
-        selectedAquarium = CreateDefaultAquarium();
-        Aquariums.Add(selectedAquarium);
         RebuildHealthDashboard();
         RebuildInventoryTotals();
         RebuildPlantReference();
         RebuildAnimalReference();
+        UpdateGridFilterOptions();
+        RebuildGridViews();
         StatusMessage = text("StatusReady");
     }
 
@@ -2547,8 +2801,40 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ObservableCollection<ContainerTypeOption> ContainerTypeOptions { get; } = [];
     public ObservableCollection<WaterTypeOption> WaterTypeOptions { get; } = [];
     public ObservableCollection<InterventionTypeOption> InterventionTypeOptions { get; } = [];
+    public ObservableCollection<FilterOption> MeasurementPeriodFilterOptions { get; } = [];
+    public ObservableCollection<FilterOption> MovementFilterOptions { get; } = [];
+    public ObservableCollection<FilterOption> PopulationTypeFilterOptions { get; } = [];
+    public ObservableCollection<FilterOption> InterventionTypeFilterOptions { get; } = [];
     public int InterventionLocalizationVersion => interventionLocalizationVersion;
     public int MovementLocalizationVersion => movementLocalizationVersion;
+    public ICollectionView? MeasurementsView
+    {
+        get => measurementsView;
+        private set => SetField(ref measurementsView, value);
+    }
+
+    public ICollectionView? PlantsView
+    {
+        get => plantsView;
+        private set => SetField(ref plantsView, value);
+    }
+
+    public ICollectionView? PopulationView
+    {
+        get => populationView;
+        private set => SetField(ref populationView, value);
+    }
+
+    public ICollectionView? InterventionsView
+    {
+        get => interventionsView;
+        private set => SetField(ref interventionsView, value);
+    }
+
+    public bool HasNoMeasurementResults => MeasurementsView?.IsEmpty == true;
+    public bool HasNoPlantResults => PlantsView?.IsEmpty == true;
+    public bool HasNoPopulationResults => PopulationView?.IsEmpty == true;
+    public bool HasNoInterventionResults => InterventionsView?.IsEmpty == true;
 
     public Aquarium SelectedAquarium
     {
@@ -2560,10 +2846,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 return;
             }
 
-            value.WaterType = NormalizeWaterTypeCode(value.WaterType);
-            value.ContainerType = NormalizeContainerTypeCode(value.ContainerType);
+            var normalizedWaterType = NormalizeWaterTypeCode(value.WaterType);
+            var normalizedContainerType = NormalizeContainerTypeCode(value.ContainerType);
+            var classificationChanged = value.WaterType != normalizedWaterType || value.ContainerType != normalizedContainerType;
+            value.WaterType = normalizedWaterType;
+            value.ContainerType = normalizedContainerType;
             if (IsFishPondContainerType(value.ContainerType))
             {
+                classificationChanged |= value.WaterType != WaterTypeFreshwaterTropical;
                 value.WaterType = WaterTypeFreshwaterTropical;
             }
 
@@ -2577,6 +2867,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 SelectedAnimalReferenceForNewPopulation = null;
                 OnPropertyChanged(nameof(StartedOnDateTime));
                 UpdateWaterTypeOptions();
+                SyncSelectedAquariumContainerTypeOption();
                 OnPropertyChanged(nameof(SelectedAquariumContainerType));
                 OnPropertyChanged(nameof(SelectedAquariumWaterType));
                 OnPropertyChanged(nameof(IsSelectedAquariumMarine));
@@ -2585,6 +2876,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 RebuildInventoryTotals();
                 RebuildPlantReference();
                 RebuildAnimalReference();
+                RebuildGridViews();
+            }
+            else if (classificationChanged)
+            {
+                RefreshSelectedAquariumClassificationBindings();
             }
         }
     }
@@ -2649,6 +2945,28 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         set => SetField(ref selectedAnimalReference, value);
     }
 
+    public ContainerTypeOption? SelectedAquariumContainerTypeOption
+    {
+        get => selectedAquariumContainerTypeOption;
+        set
+        {
+            if (value is null)
+            {
+                SyncSelectedAquariumContainerTypeOption();
+                OnPropertyChanged();
+                return;
+            }
+
+            if (!ReferenceEquals(selectedAquariumContainerTypeOption, value))
+            {
+                selectedAquariumContainerTypeOption = value;
+                OnPropertyChanged();
+            }
+
+            SelectedAquariumContainerType = value.Code;
+        }
+    }
+
     public string SelectedAquariumContainerType
     {
         get => NormalizeContainerTypeCode(SelectedAquarium.ContainerType);
@@ -2663,7 +2981,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             var normalized = NormalizeContainerTypeCode(value);
             if (SelectedAquarium.ContainerType == normalized)
             {
+                SyncSelectedAquariumContainerTypeOption();
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedAquariumContainerTypeOption));
                 return;
             }
 
@@ -2674,8 +2994,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
 
             UpdateWaterTypeOptions();
+            SyncSelectedAquariumContainerTypeOption();
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedAquariumContainerTypeOption));
             OnPropertyChanged(nameof(SelectedAquariumWaterType));
+            OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
             OnPropertyChanged(nameof(SelectedAquarium));
             OnPropertyChanged(nameof(IsSelectedAquariumMarine));
             OnPropertyChanged(nameof(IsSelectedContainerFishPond));
@@ -2684,6 +3007,28 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             RebuildPlantReference();
             RebuildAnimalReference();
             SelectedAquariumContainerTypeChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public WaterTypeOption? SelectedAquariumWaterTypeOption
+    {
+        get => selectedAquariumWaterTypeOption;
+        set
+        {
+            if (value is null)
+            {
+                SyncSelectedAquariumWaterTypeOption();
+                OnPropertyChanged();
+                return;
+            }
+
+            if (!ReferenceEquals(selectedAquariumWaterTypeOption, value))
+            {
+                selectedAquariumWaterTypeOption = value;
+                OnPropertyChanged();
+            }
+
+            SelectedAquariumWaterType = value.Code;
         }
     }
 
@@ -2706,12 +3051,16 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
             if (SelectedAquarium.WaterType == normalized)
             {
+                SyncSelectedAquariumWaterTypeOption();
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
                 return;
             }
 
             SelectedAquarium.WaterType = normalized;
+            SyncSelectedAquariumWaterTypeOption();
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
             OnPropertyChanged(nameof(SelectedAquarium));
             OnPropertyChanged(nameof(IsSelectedAquariumMarine));
             RebuildHealthDashboard();
@@ -2800,6 +3149,119 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public string PlantFilterAmmoniaMax { get => plantFilterAmmoniaMax; set => SetField(ref plantFilterAmmoniaMax, value); }
     public string PlantFilterNitritesMax { get => plantFilterNitritesMax; set => SetField(ref plantFilterNitritesMax, value); }
     public string PlantFilterNitratesMax { get => plantFilterNitratesMax; set => SetField(ref plantFilterNitratesMax, value); }
+
+    public string MeasurementSearchText
+    {
+        get => measurementSearchText;
+        set
+        {
+            if (SetField(ref measurementSearchText, value ?? string.Empty))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string MeasurementPeriodFilterCode
+    {
+        get => measurementPeriodFilterCode;
+        set
+        {
+            var normalized = value is MeasurementPeriod30Code or MeasurementPeriod90Code ? value : FilterAllCode;
+            if (SetField(ref measurementPeriodFilterCode, normalized))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string PlantSearchText
+    {
+        get => plantSearchText;
+        set
+        {
+            if (SetField(ref plantSearchText, value ?? string.Empty))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string PlantMovementFilterCode
+    {
+        get => plantMovementFilterCode;
+        set
+        {
+            var normalized = NormalizeMovementFilterCode(value);
+            if (SetField(ref plantMovementFilterCode, normalized))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string PopulationSearchText
+    {
+        get => populationSearchText;
+        set
+        {
+            if (SetField(ref populationSearchText, value ?? string.Empty))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string PopulationMovementFilterCode
+    {
+        get => populationMovementFilterCode;
+        set
+        {
+            var normalized = NormalizeMovementFilterCode(value);
+            if (SetField(ref populationMovementFilterCode, normalized))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string PopulationTypeFilterCode
+    {
+        get => populationTypeFilterCode;
+        set
+        {
+            var normalized = NormalizePopulationTypeFilterCode(value);
+            if (SetField(ref populationTypeFilterCode, normalized))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string InterventionSearchText
+    {
+        get => interventionSearchText;
+        set
+        {
+            if (SetField(ref interventionSearchText, value ?? string.Empty))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
+
+    public string InterventionTypeFilterCode
+    {
+        get => interventionTypeFilterCode;
+        set
+        {
+            var normalized = NormalizeInterventionTypeFilterCode(value);
+            if (SetField(ref interventionTypeFilterCode, normalized))
+            {
+                RefreshGridViews();
+            }
+        }
+    }
 
     public int SelectedTrendPeriodDays
     {
@@ -2986,6 +3448,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         UpdateWaterTypeOptions();
         UpdateInterventionTypeOptions();
         UpdateMovementLocalization();
+        UpdateGridFilterOptions();
         RebuildInventoryTotals();
         if (string.IsNullOrWhiteSpace(StatusMessage))
         {
@@ -3030,7 +3493,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         UpdateMovementLocalization();
+        UpdateGridFilterOptions();
         RebuildInventoryTotals();
+        RefreshGridViews();
     }
 
     private void UpdateContainerTypeOptions()
@@ -3038,8 +3503,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ContainerTypeOptions.Clear();
         ContainerTypeOptions.Add(new ContainerTypeOption(ContainerTypeAquarium, text("UiContainerTypeAquarium")));
         ContainerTypeOptions.Add(new ContainerTypeOption(ContainerTypeFishPond, text("UiContainerTypeFishPond")));
+        SyncSelectedAquariumContainerTypeOption();
         OnPropertyChanged(nameof(ContainerTypeOptions));
         OnPropertyChanged(nameof(SelectedAquariumContainerType));
+        OnPropertyChanged(nameof(SelectedAquariumContainerTypeOption));
     }
 
     private void UpdateWaterTypeOptions()
@@ -3054,8 +3521,43 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             WaterTypeOptions.Add(new WaterTypeOption(WaterTypeMarine, text("UiWaterTypeMarine")));
         }
 
+        SyncSelectedAquariumWaterTypeOption();
         OnPropertyChanged(nameof(WaterTypeOptions));
         OnPropertyChanged(nameof(SelectedAquariumWaterType));
+        OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
+    }
+
+    private void SyncSelectedAquariumContainerTypeOption()
+    {
+        var option = ContainerTypeOptions.FirstOrDefault(candidate => candidate.Code == SelectedAquariumContainerType);
+        if (!ReferenceEquals(selectedAquariumContainerTypeOption, option))
+        {
+            selectedAquariumContainerTypeOption = option;
+            OnPropertyChanged(nameof(SelectedAquariumContainerTypeOption));
+        }
+    }
+
+    private void SyncSelectedAquariumWaterTypeOption()
+    {
+        var option = WaterTypeOptions.FirstOrDefault(candidate => candidate.Code == SelectedAquariumWaterType);
+        if (!ReferenceEquals(selectedAquariumWaterTypeOption, option))
+        {
+            selectedAquariumWaterTypeOption = option;
+            OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
+        }
+    }
+
+    private void RefreshSelectedAquariumClassificationBindings()
+    {
+        SyncSelectedAquariumContainerTypeOption();
+        UpdateWaterTypeOptions();
+        OnPropertyChanged(nameof(SelectedAquariumContainerType));
+        OnPropertyChanged(nameof(SelectedAquariumContainerTypeOption));
+        OnPropertyChanged(nameof(SelectedAquariumWaterType));
+        OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
+        OnPropertyChanged(nameof(SelectedAquarium));
+        OnPropertyChanged(nameof(IsSelectedAquariumMarine));
+        OnPropertyChanged(nameof(IsSelectedContainerFishPond));
     }
 
     private void UpdateInterventionTypeOptions()
@@ -3077,6 +3579,54 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     {
         movementLocalizationVersion++;
         OnPropertyChanged(nameof(MovementLocalizationVersion));
+    }
+
+    private void UpdateGridFilterOptions()
+    {
+        ResetOptions(
+            MeasurementPeriodFilterOptions,
+            new FilterOption(FilterAllCode, text("UiFilterAll")),
+            new FilterOption(MeasurementPeriod30Code, text("UiMeasurementPeriod30")),
+            new FilterOption(MeasurementPeriod90Code, text("UiMeasurementPeriod90")));
+
+        ResetOptions(
+            MovementFilterOptions,
+            new FilterOption(FilterAllCode, text("UiFilterAll")),
+            new FilterOption(nameof(InventoryMovementType.Addition), text("UiMovementAddition")),
+            new FilterOption(nameof(InventoryMovementType.Removal), text("UiMovementRemoval")));
+
+        ResetOptions(
+            PopulationTypeFilterOptions,
+            new FilterOption(FilterAllCode, text("UiFilterAll")),
+            new FilterOption(nameof(PopulationType.Fish), text("UiPopulationTypeFish")),
+            new FilterOption(nameof(PopulationType.Shrimp), text("UiPopulationTypeShrimp")),
+            new FilterOption(nameof(PopulationType.Snail), text("UiPopulationTypeSnail")),
+            new FilterOption(nameof(PopulationType.Other), text("UiPopulationTypeOther")));
+
+        ResetOptions(
+            InterventionTypeFilterOptions,
+            new FilterOption(FilterAllCode, text("UiFilterAll")),
+            new FilterOption(nameof(InterventionType.WaterChange), text("UiInterventionWaterChange")),
+            new FilterOption(nameof(InterventionType.Fertilization), text("UiInterventionFertilization")),
+            new FilterOption(nameof(InterventionType.FilterCleaning), text("UiInterventionFilterCleaning")),
+            new FilterOption(nameof(InterventionType.PopulationAdded), text("UiInterventionPopulationAdded")),
+            new FilterOption(nameof(InterventionType.PopulationRemoved), text("UiInterventionPopulationRemoved")),
+            new FilterOption(nameof(InterventionType.MedicalTreatment), text("UiInterventionMedicalTreatment")),
+            new FilterOption(nameof(InterventionType.Other), text("UiInterventionOther")));
+
+        OnPropertyChanged(nameof(MeasurementPeriodFilterOptions));
+        OnPropertyChanged(nameof(MovementFilterOptions));
+        OnPropertyChanged(nameof(PopulationTypeFilterOptions));
+        OnPropertyChanged(nameof(InterventionTypeFilterOptions));
+    }
+
+    private static void ResetOptions(ObservableCollection<FilterOption> target, params FilterOption[] options)
+    {
+        target.Clear();
+        foreach (var option in options)
+        {
+            target.Add(option);
+        }
     }
 
     public void NotifyLanguageChanged()
@@ -3683,6 +4233,257 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         RebuildInventoryTotals();
         RebuildHealthDashboard();
         RebuildPlantReference();
+        RebuildAnimalReference();
+        RefreshGridViews();
+    }
+
+    public void ClearGridFilters()
+    {
+        MeasurementSearchText = string.Empty;
+        MeasurementPeriodFilterCode = FilterAllCode;
+        PlantSearchText = string.Empty;
+        PlantMovementFilterCode = FilterAllCode;
+        PopulationSearchText = string.Empty;
+        PopulationMovementFilterCode = FilterAllCode;
+        PopulationTypeFilterCode = FilterAllCode;
+        InterventionSearchText = string.Empty;
+        InterventionTypeFilterCode = FilterAllCode;
+        RefreshGridViews();
+    }
+
+    private void RebuildGridViews()
+    {
+        if (selectedAquarium is null)
+        {
+            MeasurementsView = null;
+            PlantsView = null;
+            PopulationView = null;
+            InterventionsView = null;
+            RefreshGridResultStates();
+            return;
+        }
+
+        MeasurementsView = CollectionViewSource.GetDefaultView(selectedAquarium.Measurements);
+        MeasurementsView.Filter = MatchesMeasurementGridFilters;
+        ApplySingleSort(MeasurementsView, nameof(WaterParameters.MeasuredAt), ListSortDirection.Descending);
+
+        PlantsView = CollectionViewSource.GetDefaultView(selectedAquarium.Plants);
+        PlantsView.Filter = MatchesPlantGridFilters;
+        ApplySingleSort(PlantsView, nameof(AquariumPlant.AddedOn), ListSortDirection.Ascending);
+
+        PopulationView = CollectionViewSource.GetDefaultView(selectedAquarium.Population);
+        PopulationView.Filter = MatchesPopulationGridFilters;
+        ApplySingleSort(PopulationView, nameof(PopulationMember.AddedOn), ListSortDirection.Ascending);
+
+        InterventionsView = CollectionViewSource.GetDefaultView(selectedAquarium.Interventions);
+        InterventionsView.Filter = MatchesInterventionGridFilters;
+        ApplySingleSort(InterventionsView, nameof(AquariumIntervention.OccurredAt), ListSortDirection.Descending);
+
+        RefreshGridViews();
+    }
+
+    private static void ApplySingleSort(ICollectionView view, string propertyName, ListSortDirection direction)
+    {
+        view.SortDescriptions.Clear();
+        view.SortDescriptions.Add(new SortDescription(propertyName, direction));
+    }
+
+    private void RefreshGridViews()
+    {
+        MeasurementsView?.Refresh();
+        PlantsView?.Refresh();
+        PopulationView?.Refresh();
+        InterventionsView?.Refresh();
+        RefreshGridResultStates();
+    }
+
+    private void RefreshGridResultStates()
+    {
+        OnPropertyChanged(nameof(HasNoMeasurementResults));
+        OnPropertyChanged(nameof(HasNoPlantResults));
+        OnPropertyChanged(nameof(HasNoPopulationResults));
+        OnPropertyChanged(nameof(HasNoInterventionResults));
+    }
+
+    private bool MatchesMeasurementGridFilters(object candidate)
+    {
+        if (candidate is not WaterParameters measurement)
+        {
+            return false;
+        }
+
+        if (measurementPeriodFilterCode is MeasurementPeriod30Code or MeasurementPeriod90Code
+            && int.TryParse(measurementPeriodFilterCode, NumberStyles.Integer, CultureInfo.InvariantCulture, out var days)
+            && selectedAquarium.Measurements.Count > 0)
+        {
+            var latestDate = selectedAquarium.Measurements.Max(item => item.MeasuredAt);
+            var lowerBound = latestDate.AddDays(-(days - 1));
+            if (measurement.MeasuredAt < lowerBound)
+            {
+                return false;
+            }
+        }
+
+        return MatchesSearch(
+            measurementSearchText,
+            measurement.MeasuredAt.ToString("g", CultureInfo.CurrentCulture),
+            measurement.AmmoniaMgPerLiter?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.NitritesMgPerLiter?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.NitratesMgPerLiter?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.Ph?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.Gh?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.Kh?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.TemperatureCelsius?.ToString("0.####", CultureInfo.CurrentCulture),
+            measurement.Notes);
+    }
+
+    private bool MatchesPlantGridFilters(object candidate)
+    {
+        if (candidate is not AquariumPlant plant)
+        {
+            return false;
+        }
+
+        if (!MatchesMovementFilter(plant.MovementType, plantMovementFilterCode))
+        {
+            return false;
+        }
+
+        return MatchesSearch(
+            plantSearchText,
+            plant.AddedOn.ToString("d", CultureInfo.CurrentCulture),
+            BuildMovementLabel(plant.MovementType),
+            plant.Quantity.ToString(CultureInfo.CurrentCulture),
+            plant.CommonName,
+            plant.ScientificName,
+            BuildPlantGrowthLabel(plant.GrowthSpeed),
+            plant.LightNeed,
+            plant.Notes);
+    }
+
+    private bool MatchesPopulationGridFilters(object candidate)
+    {
+        if (candidate is not PopulationMember member)
+        {
+            return false;
+        }
+
+        if (!MatchesMovementFilter(member.MovementType, populationMovementFilterCode))
+        {
+            return false;
+        }
+
+        if (populationTypeFilterCode != FilterAllCode
+            && (!Enum.TryParse<PopulationType>(populationTypeFilterCode, out var type) || member.Type != type))
+        {
+            return false;
+        }
+
+        return MatchesSearch(
+            populationSearchText,
+            member.AddedOn.ToString("d", CultureInfo.CurrentCulture),
+            BuildMovementLabel(member.MovementType),
+            BuildPopulationFamilyLabel(member.Type),
+            member.Quantity.ToString(CultureInfo.CurrentCulture),
+            member.CommonName,
+            member.SpeciesName,
+            member.Notes);
+    }
+
+    private bool MatchesInterventionGridFilters(object candidate)
+    {
+        if (candidate is not AquariumIntervention intervention)
+        {
+            return false;
+        }
+
+        if (interventionTypeFilterCode != FilterAllCode
+            && (!Enum.TryParse<InterventionType>(interventionTypeFilterCode, out var type) || intervention.Type != type))
+        {
+            return false;
+        }
+
+        return MatchesSearch(
+            interventionSearchText,
+            intervention.OccurredAt.ToString("g", CultureInfo.CurrentCulture),
+            BuildInterventionTypeLabel(intervention.Type),
+            intervention.ProductName,
+            intervention.ProductQuantity,
+            intervention.WaterVolumeLiters?.ToString("0.####", CultureInfo.CurrentCulture),
+            intervention.WaterPercentage?.ToString("0.####", CultureInfo.CurrentCulture),
+            intervention.PopulationChangeReason,
+            intervention.PopulationChangeCount?.ToString(CultureInfo.CurrentCulture),
+            intervention.Notes);
+    }
+
+    private static bool MatchesMovementFilter(InventoryMovementType movementType, string filterCode)
+    {
+        return filterCode == FilterAllCode
+            || string.Equals(movementType.ToString(), filterCode, StringComparison.Ordinal);
+    }
+
+    private string BuildMovementLabel(InventoryMovementType type)
+    {
+        return type == InventoryMovementType.Removal
+            ? text("UiMovementRemoval")
+            : text("UiMovementAddition");
+    }
+
+    private string BuildPlantGrowthLabel(PlantGrowthSpeed growthSpeed)
+    {
+        return growthSpeed switch
+        {
+            PlantGrowthSpeed.Slow => text("UiGrowthSlow"),
+            PlantGrowthSpeed.Fast => text("UiGrowthFast"),
+            _ => text("UiGrowthMedium")
+        };
+    }
+
+    private string BuildInterventionTypeLabel(InterventionType type)
+    {
+        return type switch
+        {
+            InterventionType.Fertilization => text("UiInterventionFertilization"),
+            InterventionType.FilterCleaning => text("UiInterventionFilterCleaning"),
+            InterventionType.PopulationAdded => text("UiInterventionPopulationAdded"),
+            InterventionType.PopulationRemoved => text("UiInterventionPopulationRemoved"),
+            InterventionType.MedicalTreatment => text("UiInterventionMedicalTreatment"),
+            InterventionType.Other => text("UiInterventionOther"),
+            _ => text("UiInterventionWaterChange")
+        };
+    }
+
+    private static bool MatchesSearch(string searchText, params string?[] values)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return true;
+        }
+
+        var normalizedSearch = NormalizeChoiceText(searchText);
+        return values.Any(value => !string.IsNullOrWhiteSpace(value)
+            && NormalizeChoiceText(value).Contains(normalizedSearch, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeMovementFilterCode(string? value)
+    {
+        return value is nameof(InventoryMovementType.Addition) or nameof(InventoryMovementType.Removal)
+            ? value
+            : FilterAllCode;
+    }
+
+    private static string NormalizePopulationTypeFilterCode(string? value)
+    {
+        return Enum.TryParse<PopulationType>(value, out var type)
+            ? type.ToString()
+            : FilterAllCode;
+    }
+
+    private static string NormalizeInterventionTypeFilterCode(string? value)
+    {
+        return Enum.TryParse<InterventionType>(value, out var type)
+            ? type.ToString()
+            : FilterAllCode;
     }
 
     private Aquarium CreateDefaultAquarium()
@@ -4386,6 +5187,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 public sealed record WaterTypeOption(string Code, string Label);
 public sealed record ContainerTypeOption(string Code, string Label);
 public sealed record InterventionTypeOption(InterventionType Type, string Label);
+public sealed record FilterOption(string Code, string Label);
 public sealed record HealthIndicator(string Name, string LatestDisplay, string TargetRange, string Trend, string Alert);
 public sealed record PlantInventoryTotal(string CommonName, string ScientificName, int Quantity);
 public sealed record PopulationInventoryTotal(string Family, string CommonName, string SpeciesName, int Quantity);
