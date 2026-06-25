@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -36,6 +37,7 @@ public partial class MainWindow : Window
     private const string AccentPurple = "purple";
 
     private readonly MainWindowViewModel viewModel = new();
+    private readonly SemaphoreSlim selectedAquariumPersistGate = new(1, 1);
     private readonly Dictionary<string, Dictionary<string, string>> localizedTexts = CreateLocalizedTexts();
     private MySqlAquariumRepository? repository;
     private string? activeConnectionString;
@@ -43,7 +45,6 @@ public partial class MainWindow : Window
     private bool isLoadingAquariums;
     private bool isInlineGridPersistQueued;
     private bool isInlineGridPersisting;
-    private bool isSheetPersisting;
     private bool isClassificationPersisting;
     private string currentLanguage = LanguageFrench;
     private string currentTheme = ThemeLight;
@@ -670,7 +671,7 @@ public partial class MainWindow : Window
                 beforePersist?.Invoke();
                 await PersistInlineGridEditAsync(successMessage, logContext);
             }),
-            DispatcherPriority.Background);
+            DispatcherPriority.ContextIdle);
     }
 
     private async Task PersistInlineGridEditAsync(string successMessage, string logContext)
@@ -796,11 +797,6 @@ public partial class MainWindow : Window
 
     private async Task PersistSelectedAquariumSheetAsync()
     {
-        if (isSheetPersisting)
-        {
-            return;
-        }
-
         if (repository is null)
         {
             viewModel.StatusMessage = T("StatusLocalModeConfigure");
@@ -814,12 +810,11 @@ public partial class MainWindow : Window
         }
 
         var aquarium = viewModel.SelectedAquarium;
+        await selectedAquariumPersistGate.WaitAsync();
         try
         {
-            isSheetPersisting = true;
             AppLogger.Info($"Saving selected aquarium sheet: AquariumId={aquarium.Id}, VolumeLiters={aquarium.VolumeLiters}.");
-            await repository.InitializeAsync();
-            await repository.SaveAsync(aquarium);
+            await repository.SaveSheetAsync(aquarium);
             viewModel.StatusMessage = T("StatusAquariumSaved");
         }
         catch (Exception exception)
@@ -829,7 +824,7 @@ public partial class MainWindow : Window
         }
         finally
         {
-            isSheetPersisting = false;
+            selectedAquariumPersistGate.Release();
         }
     }
 
@@ -851,13 +846,13 @@ public partial class MainWindow : Window
         aquarium.ContainerType = viewModel.SelectedAquariumContainerType;
         aquarium.WaterType = viewModel.SelectedAquariumWaterType;
 
+        isClassificationPersisting = true;
+        await selectedAquariumPersistGate.WaitAsync();
         try
         {
-            isClassificationPersisting = true;
             AppLogger.Info($"Saving selected aquarium classification: AquariumId={aquariumId}, ContainerType={aquarium.ContainerType}, WaterType={aquarium.WaterType}.");
-            await repository.InitializeAsync();
-            await repository.SaveAsync(aquarium);
-            await LoadAquariumsAsync(aquariumId);
+            await repository.SaveSheetAsync(aquarium);
+            viewModel.RefreshSelectedAquariumClassificationAfterPersist();
             viewModel.StatusMessage = T("StatusAquariumSaved");
         }
         catch (Exception exception)
@@ -867,6 +862,7 @@ public partial class MainWindow : Window
         }
         finally
         {
+            selectedAquariumPersistGate.Release();
             isClassificationPersisting = false;
         }
     }
@@ -971,7 +967,7 @@ public partial class MainWindow : Window
         var minimumParameterGroups = ShowReferenceSearchCriteriaDialog();
         if (!minimumParameterGroups.HasValue)
         {
-            viewModel.StatusMessage = "Recherche plantes annulee.";
+            viewModel.StatusMessage = "Recherche plantes annulée.";
             return;
         }
 
@@ -984,11 +980,11 @@ public partial class MainWindow : Window
                 lastProgressMessage = message;
                 viewModel.StatusMessage = message;
             });
-            viewModel.StatusMessage = $"Recherche plantes lancee avec au moins {minimumParameterGroups.Value} groupes de parametres.";
+            viewModel.StatusMessage = $"Recherche plantes lancée avec au moins {minimumParameterGroups.Value} groupes de paramètres.";
             var imported = await repository.ImportPlantReferencesFromWebAsync(progress, minimumParameterGroups.Value);
             await ReloadPlantReferencesAsync();
             viewModel.StatusMessage = string.IsNullOrWhiteSpace(lastProgressMessage)
-                ? $"{imported} nouvelles plantes importees depuis le web."
+                ? $"{imported} nouvelles plantes importées depuis le web."
                 : lastProgressMessage;
         }
         catch (Exception ex)
@@ -1001,19 +997,19 @@ public partial class MainWindow : Window
     private void PlantReferenceCompatibility_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ApplyPlantReferenceCompatibilityHighlight();
-        viewModel.StatusMessage = "Compatibilite plantes evaluee sur la derniere mesure du contenant selectionne.";
+        viewModel.StatusMessage = "Compatibilité plantes évaluée sur la derniere mesure du contenant selectionne.";
     }
 
     private void PlantReferenceApplyFilters_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ApplyPlantReferenceFilters();
-        viewModel.StatusMessage = "Filtres plantes appliques.";
+        viewModel.StatusMessage = "Filtres plantes appliqués.";
     }
 
     private void PlantReferenceResetFilters_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ResetPlantReferenceFilters();
-        viewModel.StatusMessage = "Filtres plantes reinitialises.";
+        viewModel.StatusMessage = "Filtres plantes réinitialisés.";
     }
 
     private async void PlantReferenceDelete_Click(object sender, RoutedEventArgs e)
@@ -1026,13 +1022,13 @@ public partial class MainWindow : Window
 
         if (viewModel.SelectedPlantReference is null)
         {
-            viewModel.StatusMessage = "Selectionner une reference plante a supprimer.";
+            viewModel.StatusMessage = "Sélectionner une référence plante à supprimer.";
             return;
         }
 
         var reference = viewModel.SelectedPlantReference;
         var result = MessageBox.Show(
-            $"Supprimer la reference \"{reference.ScientificName}\" ?",
+            $"Supprimer la référence \"{reference.ScientificName}\" ?",
             "Confirmation",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -1045,11 +1041,11 @@ public partial class MainWindow : Window
         {
             await repository.DeletePlantReferenceAsync(reference.Id);
             await ReloadPlantReferencesAsync();
-            viewModel.StatusMessage = "Reference plante supprimee.";
+            viewModel.StatusMessage = "Référence plante supprimée.";
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Suppression reference impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Suppression référence impossible: {ex.Message}";
             AppLogger.Error("Delete plant reference failed.", ex);
         }
     }
@@ -1058,12 +1054,12 @@ public partial class MainWindow : Window
     {
         if (repository is null)
         {
-            viewModel.StatusMessage = "Configurer MySQL avant reinitialisation.";
+            viewModel.StatusMessage = "Configurer MySQL avant réinitialisation.";
             return;
         }
 
         var result = MessageBox.Show(
-            "Reinitialiser le referentiel plantes ?",
+            "Réinitialiser le référentiel plantes ?",
             "Confirmation",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -1078,11 +1074,11 @@ public partial class MainWindow : Window
             await repository.ResetPlantReferencesAsync();
             var after = await repository.GetPlantReferenceCountAsync();
             await ReloadPlantReferencesAsync();
-            viewModel.StatusMessage = $"Referentiel plantes reinitialise (avant: {before}, apres: {after}).";
+            viewModel.StatusMessage = $"Référentiel plantes réinitialisé (avant: {before}, après: {after}).";
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Reinitialisation plantes impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Réinitialisation plantes impossible: {ex.Message}";
             AppLogger.Error("Reset plant references failed.", ex);
         }
     }
@@ -1116,7 +1112,7 @@ public partial class MainWindow : Window
         var minimumParameterGroups = ShowReferenceSearchCriteriaDialog();
         if (!minimumParameterGroups.HasValue)
         {
-            viewModel.StatusMessage = "Recherche especes annulee.";
+            viewModel.StatusMessage = "Recherche espèces annulée.";
             return;
         }
 
@@ -1129,16 +1125,16 @@ public partial class MainWindow : Window
                 lastProgressMessage = message;
                 viewModel.StatusMessage = message;
             });
-            viewModel.StatusMessage = $"Recherche especes lancee avec au moins {minimumParameterGroups.Value} groupes de parametres.";
+            viewModel.StatusMessage = $"Recherche espèces lancée avec au moins {minimumParameterGroups.Value} groupes de paramètres.";
             var imported = await repository.ImportAnimalReferencesFromWebAsync(progress, minimumParameterGroups.Value);
             await ReloadAnimalReferencesAsync();
             viewModel.StatusMessage = string.IsNullOrWhiteSpace(lastProgressMessage)
-                ? $"{imported} nouvelles especes importees depuis le web."
+                ? $"{imported} nouvelles espèces importées depuis le web."
                 : lastProgressMessage;
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Import web des especes impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Import web des espèces impossible: {ex.Message}";
             AppLogger.Error("Animal import failed.", ex);
         }
     }
@@ -1275,19 +1271,19 @@ public partial class MainWindow : Window
     private void AnimalReferenceCompatibility_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ApplyAnimalReferenceCompatibilityHighlight();
-        viewModel.StatusMessage = "Compatibilite especes evaluee sur la derniere mesure du contenant selectionne.";
+        viewModel.StatusMessage = "Compatibilité espèces évaluée sur la derniere mesure du contenant selectionne.";
     }
 
     private void AnimalReferenceApplyFilters_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ApplyAnimalReferenceFilters();
-        viewModel.StatusMessage = "Filtres especes appliques.";
+        viewModel.StatusMessage = "Filtres espèces appliqués.";
     }
 
     private void AnimalReferenceResetFilters_Click(object sender, RoutedEventArgs e)
     {
         viewModel.ResetAnimalReferenceFilters();
-        viewModel.StatusMessage = "Filtres especes reinitialises.";
+        viewModel.StatusMessage = "Filtres espèces réinitialisés.";
     }
 
     private async void PlantReferenceEdit_Click(object sender, RoutedEventArgs e)
@@ -1300,7 +1296,7 @@ public partial class MainWindow : Window
 
         if (viewModel.SelectedPlantReference is null)
         {
-            viewModel.StatusMessage = "Selectionner une reference plante a modifier.";
+            viewModel.StatusMessage = "Sélectionner une référence plante a modifier.";
             return;
         }
 
@@ -1314,11 +1310,11 @@ public partial class MainWindow : Window
         {
             await repository.UpdatePlantReferenceAsync(updated);
             await ReloadPlantReferencesAsync();
-            viewModel.StatusMessage = "Reference plante modifiee.";
+            viewModel.StatusMessage = "Référence plante modifiée.";
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Modification reference plante impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Modification référence plante impossible: {ex.Message}";
             AppLogger.Error("Update plant reference failed.", ex);
         }
     }
@@ -1389,8 +1385,8 @@ public partial class MainWindow : Window
         AddEditRow(form, "GH max", ghMaxInput, textBrush);
         AddEditRow(form, "KH min", khMinInput, textBrush);
         AddEditRow(form, "KH max", khMaxInput, textBrush);
-        AddEditRow(form, "Temperature min", temperatureMinInput, textBrush);
-        AddEditRow(form, "Temperature max", temperatureMaxInput, textBrush);
+        AddEditRow(form, "Température min", temperatureMinInput, textBrush);
+        AddEditRow(form, "Température max", temperatureMaxInput, textBrush);
         AddEditRow(form, "Amoniac min", ammoniaMinInput, textBrush);
         AddEditRow(form, "Amoniac max", ammoniaMaxInput, textBrush);
         AddEditRow(form, "Nitrites min", nitritesMinInput, textBrush);
@@ -1398,13 +1394,13 @@ public partial class MainWindow : Window
         AddEditRow(form, "Nitrates min", nitratesMinInput, textBrush);
         AddEditRow(form, "Nitrates max", nitratesMaxInput, textBrush);
         AddEditRow(form, "Volume min (L)", volumeInput, textBrush);
-        AddEditRow(form, "Lumiere", lightInput, textBrush);
+        AddEditRow(form, "Lumière", lightInput, textBrush);
         AddEditRow(form, "CO2", co2Input, textBrush);
         AddEditRow(form, "Fertilisation", fertilizationInput, textBrush);
         AddEditRow(form, "Croissance", growthInput, textBrush);
         AddEditRow(form, "Emplacement", placementInput, textBrush);
         AddEditRow(form, "Comportement", behaviorInput, textBrush);
-        AddEditRow(form, "Compatibilites", compatibilityInput, textBrush);
+        AddEditRow(form, "Compatibilités", compatibilityInput, textBrush);
         AddEditRow(form, "URL source", sourceUrlInput, textBrush);
 
         var okButton = new Button { Content = "Enregistrer", Width = 110, Height = 32, IsDefault = true };
@@ -1421,7 +1417,7 @@ public partial class MainWindow : Window
         var content = new StackPanel();
         content.Children.Add(new TextBlock
         {
-            Text = "Corriger la reference plante selectionnee. Les champs numeriques vides resteront inconnus en base.",
+            Text = "Corriger la référence plante sélectionnée. Les champs numériques vides resteront inconnus en base.",
             Foreground = secondaryBrush,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(18, 18, 18, 0)
@@ -1432,7 +1428,7 @@ public partial class MainWindow : Window
 
         var dialog = new Window
         {
-            Title = "Modifier une reference plante",
+            Title = "Modifier une référence plante",
             Owner = this,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Width = 700,
@@ -1464,8 +1460,8 @@ public partial class MainWindow : Window
                 || !TryReadDecimal(ghMaxInput, "GH max", errorText, out var ghMax)
                 || !TryReadDecimal(khMinInput, "KH min", errorText, out var khMin)
                 || !TryReadDecimal(khMaxInput, "KH max", errorText, out var khMax)
-                || !TryReadDecimal(temperatureMinInput, "Temperature min", errorText, out var temperatureMin)
-                || !TryReadDecimal(temperatureMaxInput, "Temperature max", errorText, out var temperatureMax)
+                || !TryReadDecimal(temperatureMinInput, "Température min", errorText, out var temperatureMin)
+                || !TryReadDecimal(temperatureMaxInput, "Température max", errorText, out var temperatureMax)
                 || !TryReadDecimal(ammoniaMinInput, "Amoniac min", errorText, out var ammoniaMin)
                 || !TryReadDecimal(ammoniaMaxInput, "Amoniac max", errorText, out var ammoniaMax)
                 || !TryReadDecimal(nitritesMinInput, "Nitrites min", errorText, out var nitritesMin)
@@ -1548,7 +1544,7 @@ public partial class MainWindow : Window
 
         if (viewModel.SelectedAnimalReference is null)
         {
-            viewModel.StatusMessage = "Selectionner une reference animale a modifier.";
+            viewModel.StatusMessage = "Sélectionner une référence animale a modifier.";
             return;
         }
 
@@ -1562,11 +1558,11 @@ public partial class MainWindow : Window
         {
             await repository.UpdateAnimalReferenceAsync(updated);
             await ReloadAnimalReferencesAsync();
-            viewModel.StatusMessage = "Reference animale modifiee.";
+            viewModel.StatusMessage = "Référence animale modifiée.";
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Modification reference impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Modification référence impossible: {ex.Message}";
             AppLogger.Error("Update animal reference failed.", ex);
         }
     }
@@ -1583,6 +1579,21 @@ public partial class MainWindow : Window
         environmentInput.Items.Add("Eau douce");
         environmentInput.Items.Add("Eau de mer");
         environmentInput.SelectedIndex = source.Environment == AnimalReferenceEnvironment.Marine ? 1 : 0;
+
+        var groupInput = CreateEditComboBox(inputBrush, textBrush, borderBrush);
+        var groupOptions = new[]
+        {
+            (Group: AnimalReferenceGroup.Fish, Label: "Poissons"),
+            (Group: AnimalReferenceGroup.Shrimp, Label: "Crevettes"),
+            (Group: AnimalReferenceGroup.Snail, Label: "Mollusques"),
+            (Group: AnimalReferenceGroup.Other, Label: "Autres")
+        };
+        foreach (var option in groupOptions)
+        {
+            groupInput.Items.Add(option.Label);
+        }
+
+        groupInput.SelectedIndex = Math.Max(0, Array.FindIndex(groupOptions, option => option.Group == source.Group));
 
         var commonNameInput = CreateEditTextBox(source.CommonName);
         var commonNameFrInput = CreateEditTextBox(source.CommonNameFr);
@@ -1621,6 +1632,7 @@ public partial class MainWindow : Window
         form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         AddEditRow(form, "Environnement", environmentInput, textBrush);
+        AddEditRow(form, "Groupe", groupInput, textBrush);
         AddEditRow(form, "Nom courant", commonNameInput, textBrush);
         AddEditRow(form, "Nom FR", commonNameFrInput, textBrush);
         AddEditRow(form, "Nom EN", commonNameEnInput, textBrush);
@@ -1632,8 +1644,8 @@ public partial class MainWindow : Window
         AddEditRow(form, "GH max", ghMaxInput, textBrush);
         AddEditRow(form, "KH min", khMinInput, textBrush);
         AddEditRow(form, "KH max", khMaxInput, textBrush);
-        AddEditRow(form, "Temperature min", temperatureMinInput, textBrush);
-        AddEditRow(form, "Temperature max", temperatureMaxInput, textBrush);
+        AddEditRow(form, "Température min", temperatureMinInput, textBrush);
+        AddEditRow(form, "Température max", temperatureMaxInput, textBrush);
         AddEditRow(form, "Amoniac min", ammoniaMinInput, textBrush);
         AddEditRow(form, "Amoniac max", ammoniaMaxInput, textBrush);
         AddEditRow(form, "Nitrites min", nitritesMinInput, textBrush);
@@ -1642,7 +1654,7 @@ public partial class MainWindow : Window
         AddEditRow(form, "Nitrates max", nitratesMaxInput, textBrush);
         AddEditRow(form, "Volume min (L)", volumeInput, textBrush);
         AddEditRow(form, "Comportement", behaviorInput, textBrush);
-        AddEditRow(form, "Compatibilites", compatibilityInput, textBrush);
+        AddEditRow(form, "Compatibilités", compatibilityInput, textBrush);
         AddEditRow(form, "URL source", sourceUrlInput, textBrush);
 
         var okButton = new Button { Content = "Enregistrer", Width = 110, Height = 32, IsDefault = true };
@@ -1659,7 +1671,7 @@ public partial class MainWindow : Window
         var content = new StackPanel();
         content.Children.Add(new TextBlock
         {
-            Text = "Corriger la reference selectionnee. Les champs numeriques vides resteront inconnus en base.",
+            Text = "Corriger la référence sélectionnée. Les champs numériques vides resteront inconnus en base.",
             Foreground = secondaryBrush,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(18, 18, 18, 0)
@@ -1670,7 +1682,7 @@ public partial class MainWindow : Window
 
         var dialog = new Window
         {
-            Title = "Modifier une reference animale",
+            Title = "Modifier une référence animale",
             Owner = this,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Width = 680,
@@ -1702,8 +1714,8 @@ public partial class MainWindow : Window
                 || !TryReadDecimal(ghMaxInput, "GH max", errorText, out var ghMax)
                 || !TryReadDecimal(khMinInput, "KH min", errorText, out var khMin)
                 || !TryReadDecimal(khMaxInput, "KH max", errorText, out var khMax)
-                || !TryReadDecimal(temperatureMinInput, "Temperature min", errorText, out var temperatureMin)
-                || !TryReadDecimal(temperatureMaxInput, "Temperature max", errorText, out var temperatureMax)
+                || !TryReadDecimal(temperatureMinInput, "Température min", errorText, out var temperatureMin)
+                || !TryReadDecimal(temperatureMaxInput, "Température max", errorText, out var temperatureMax)
                 || !TryReadDecimal(ammoniaMinInput, "Amoniac min", errorText, out var ammoniaMin)
                 || !TryReadDecimal(ammoniaMaxInput, "Amoniac max", errorText, out var ammoniaMax)
                 || !TryReadDecimal(nitritesMinInput, "Nitrites min", errorText, out var nitritesMin)
@@ -1718,11 +1730,15 @@ public partial class MainWindow : Window
             var selectedEnvironment = environmentInput.SelectedIndex == 1
                 ? AnimalReferenceEnvironment.Marine
                 : AnimalReferenceEnvironment.FreshwaterTropical;
+            var selectedGroup = groupInput.SelectedIndex >= 0 && groupInput.SelectedIndex < groupOptions.Length
+                ? groupOptions[groupInput.SelectedIndex].Group
+                : AnimalReferenceGroup.Fish;
 
             result = new AnimalReference
             {
                 Id = source.Id,
                 Environment = selectedEnvironment,
+                Group = selectedGroup,
                 CommonName = commonNameInput.Text.Trim(),
                 CommonNameFr = commonNameFrInput.Text.Trim(),
                 CommonNameEn = commonNameEnInput.Text.Trim(),
@@ -1878,7 +1894,7 @@ public partial class MainWindow : Window
             return true;
         }
 
-        ShowEditError(errorText, $"Valeur entiere invalide pour {label}.");
+        ShowEditError(errorText, $"Valeur entière invalide pour {label}.");
         input.Focus();
         input.SelectAll();
         return false;
@@ -1905,13 +1921,13 @@ public partial class MainWindow : Window
 
         if (viewModel.SelectedAnimalReference is null)
         {
-            viewModel.StatusMessage = "Selectionner une reference animale a supprimer.";
+            viewModel.StatusMessage = "Sélectionner une référence animale à supprimer.";
             return;
         }
 
         var reference = viewModel.SelectedAnimalReference;
         var result = MessageBox.Show(
-            $"Supprimer la reference \"{reference.ScientificName}\" ?",
+            $"Supprimer la référence \"{reference.ScientificName}\" ?",
             "Confirmation",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -1924,11 +1940,11 @@ public partial class MainWindow : Window
         {
             await repository.DeleteAnimalReferenceAsync(reference.Id);
             await ReloadAnimalReferencesAsync();
-            viewModel.StatusMessage = "Reference animale supprimee.";
+            viewModel.StatusMessage = "Référence animale supprimée.";
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Suppression reference impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Suppression référence impossible: {ex.Message}";
             AppLogger.Error("Delete animal reference failed.", ex);
         }
     }
@@ -1937,12 +1953,12 @@ public partial class MainWindow : Window
     {
         if (repository is null)
         {
-            viewModel.StatusMessage = "Configurer MySQL avant reinitialisation.";
+            viewModel.StatusMessage = "Configurer MySQL avant réinitialisation.";
             return;
         }
 
         var result = MessageBox.Show(
-            "Reinitialiser le referentiel population ?",
+            "Réinitialiser le référentiel population ?",
             "Confirmation",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -1957,11 +1973,11 @@ public partial class MainWindow : Window
             await repository.ResetAnimalReferencesAsync();
             var after = await repository.GetAnimalReferenceCountAsync();
             await ReloadAnimalReferencesAsync();
-            viewModel.StatusMessage = $"Referentiel population reinitialise (avant: {before}, apres: {after}).";
+            viewModel.StatusMessage = $"Référentiel population réinitialisé (avant: {before}, après: {after}).";
         }
         catch (Exception ex)
         {
-            viewModel.StatusMessage = $"Reinitialisation population impossible: {ex.Message}";
+            viewModel.StatusMessage = $"Réinitialisation population impossible: {ex.Message}";
             AppLogger.Error("Reset animal references failed.", ex);
         }
     }
@@ -1987,7 +2003,7 @@ public partial class MainWindow : Window
     private void RefreshLog_Click(object sender, RoutedEventArgs e)
     {
         RefreshApplicationLog();
-        viewModel.StatusMessage = "Log rafraichi.";
+        viewModel.StatusMessage = "Log rafraîchi.";
     }
 
     private void OpenLogFile_Click(object sender, RoutedEventArgs e)
@@ -2183,36 +2199,36 @@ public partial class MainWindow : Window
     {
         var fr = new Dictionary<string, string>
         {
-            ["UiAppSubtitle"] = "Gestion des aquariums, bassins, parametres d'eau, plantes et population",
+            ["UiAppSubtitle"] = "Gestion des aquariums, bassins, paramètres d'eau, plantes et population",
             ["UiSectionAquariums"] = "Contenants",
             ["UiButtonNewAquarium"] = "Nouveau contenant",
             ["UiButtonDeleteAquarium"] = "Supprimer contenant",
             ["UiTabSheet"] = "Fiche",
-            ["UiTabParameters"] = "Parametres",
-            ["UiTabHealth"] = "Sante",
+            ["UiTabParameters"] = "Paramètres",
+            ["UiTabHealth"] = "Santé",
             ["UiTabPlants"] = "Plantes",
-            ["UiTabPlantReference"] = "Referentiel plantes",
+            ["UiTabPlantReference"] = "Référentiel plantes",
             ["UiTabPopulation"] = "Population",
-            ["UiTabAnimalReference"] = "Referentiel population",
+            ["UiTabAnimalReference"] = "Référentiel population",
             ["UiTabInterventions"] = "Interventions",
-            ["UiTabSettings"] = "Parametrages",
+            ["UiTabSettings"] = "Paramétrages",
             ["UiLabelName"] = "Nom",
             ["UiLabelVolume"] = "Volume (L)",
             ["UiLabelContainerType"] = "Type de contenant",
             ["UiContainerTypeAquarium"] = "Aquarium",
-            ["UiContainerTypeFishPond"] = "Bassin a poissons",
+            ["UiContainerTypeFishPond"] = "Bassin à poissons",
             ["UiLabelWaterType"] = "Type d'eau",
             ["UiWaterTypeFreshwaterTropical"] = "Eau douce",
             ["UiWaterTypeFreshwaterPond"] = "Eau douce de bassin",
             ["UiWaterTypeMarine"] = "Eau de mer",
-            ["UiPlantReferenceLabelUnknown"] = "Referentiel plantes - type inconnu",
-            ["UiPlantReferenceLabelFreshwater"] = "Referentiel plantes - Eau douce",
-            ["UiPlantReferenceLabelPond"] = "Referentiel plantes - Bassin a poissons",
-            ["UiPlantReferenceLabelMarine"] = "Referentiel plantes - Eau de mer",
-            ["UiAnimalReferenceLabelUnknown"] = "Referentiel population - type inconnu",
-            ["UiAnimalReferenceLabelFreshwater"] = "Referentiel population - Eau douce",
-            ["UiAnimalReferenceLabelPond"] = "Referentiel population - Bassin a poissons",
-            ["UiAnimalReferenceLabelMarine"] = "Referentiel population - Eau de mer",
+            ["UiPlantReferenceLabelUnknown"] = "Référentiel plantes - type inconnu",
+            ["UiPlantReferenceLabelFreshwater"] = "Référentiel plantes - Eau douce",
+            ["UiPlantReferenceLabelPond"] = "Référentiel plantes - Bassin à poissons",
+            ["UiPlantReferenceLabelMarine"] = "Référentiel plantes - Eau de mer",
+            ["UiAnimalReferenceLabelUnknown"] = "Référentiel population - type inconnu",
+            ["UiAnimalReferenceLabelFreshwater"] = "Référentiel population - Eau douce",
+            ["UiAnimalReferenceLabelPond"] = "Référentiel population - Bassin à poissons",
+            ["UiAnimalReferenceLabelMarine"] = "Référentiel population - Eau de mer",
             ["UiLabelStartedOn"] = "Mise en eau",
             ["UiLabelNotes"] = "Notes",
             ["UiLabelAmmonia"] = "Amoniac mg/L",
@@ -2221,14 +2237,14 @@ public partial class MainWindow : Window
             ["UiLabelPh"] = "pH",
             ["UiLabelGh"] = "GH",
             ["UiLabelKh"] = "KH",
-            ["UiLabelTemperature"] = "Temperature C",
+            ["UiLabelTemperature"] = "Température C",
             ["UiWaterParameterAmmonia"] = "Amoniac",
             ["UiWaterParameterNitrites"] = "Nitrites",
             ["UiWaterParameterNitrates"] = "Nitrates",
             ["UiWaterParameterPh"] = "pH",
             ["UiWaterParameterGh"] = "GH",
             ["UiWaterParameterKh"] = "KH",
-            ["UiWaterParameterTemperature"] = "Temperature",
+            ["UiWaterParameterTemperature"] = "Température",
             ["UiButtonAddMeasurement"] = "Ajouter la mesure",
             ["UiButtonDuplicateMeasurement"] = "Dupliquer la mesure",
             ["UiButtonDeleteMeasurement"] = "Supprimer la mesure",
@@ -2239,10 +2255,15 @@ public partial class MainWindow : Window
             ["UiMovementRemoval"] = "Retrait",
             ["UiPlantQuantity"] = "Nombre",
             ["UiPlantCommonName"] = "Nom courant",
-            ["UiPlantReferenceChoice"] = "Referentiel",
+            ["UiPlantReferenceChoice"] = "Référentiel",
             ["UiPlantScientificName"] = "Nom scientifique",
-            ["UiPlantRefNoData"] = "Aucune plante de reference pour ce type de contenant.",
+            ["UiPlantRefNoData"] = "Aucune plante de référence pour ce type de contenant.",
             ["UiPlantRefEnvironment"] = "Type",
+            ["UiAnimalRefGroup"] = "Groupe",
+            ["UiAnimalGroupFish"] = "Poissons",
+            ["UiAnimalGroupShrimp"] = "Crevettes",
+            ["UiAnimalGroupSnail"] = "Mollusques",
+            ["UiAnimalGroupOther"] = "Autres",
             ["UiPlantRefCommonName"] = "Nom courant",
             ["UiPlantRefScientificName"] = "Nom scientifique",
             ["UiPlantRefPhMin"] = "pH min",
@@ -2260,27 +2281,27 @@ public partial class MainWindow : Window
             ["UiPlantRefNo3Min"] = "Nitrates min",
             ["UiPlantRefNo3Max"] = "Nitrates max",
             ["UiPlantRefVolumeMin"] = "Volume min L",
-            ["UiPlantRefLight"] = "Lumiere",
+            ["UiPlantRefLight"] = "Lumière",
             ["UiPlantRefCo2"] = "CO2",
             ["UiPlantRefFertilization"] = "Fertilisation",
             ["UiPlantRefGrowth"] = "Croissance",
             ["UiPlantRefPlacement"] = "Emplacement",
             ["UiPlantRefBehavior"] = "Comportement",
-            ["UiPlantRefCompatibility"] = "Compatibilites",
+            ["UiPlantRefCompatibility"] = "Compatibilités",
             ["UiPlantRefSourceUrl"] = "Source URL",
-            ["UiPlantRefSearchMore"] = "Recherches complementaires",
-            ["UiPlantRefCheckCompatibility"] = "Verifier compatibilite",
-            ["UiPlantRefEdit"] = "Modifier reference",
+            ["UiPlantRefSearchMore"] = "Recherches complémentaires",
+            ["UiPlantRefCheckCompatibility"] = "Vérifier compatibilité",
+            ["UiPlantRefEdit"] = "Modifier référence",
             ["UiPlantRefApplyFilters"] = "Appliquer filtres",
-            ["UiPlantRefResetFilters"] = "Reinitialiser filtres",
-            ["UiPlantRefDelete"] = "Supprimer reference",
-            ["UiPlantRefResetCatalog"] = "Reinitialiser referentiel",
+            ["UiPlantRefResetFilters"] = "Réinitialiser filtres",
+            ["UiPlantRefDelete"] = "Supprimer référence",
+            ["UiPlantRefResetCatalog"] = "Réinitialiser référentiel",
             ["UiPlantGrowth"] = "Croissance",
             ["UiGrowthSlow"] = "Lente",
             ["UiGrowthMedium"] = "Moyenne",
             ["UiGrowthFast"] = "Rapide",
-            ["UiPlantLightNeed"] = "Lumiere",
-            ["UiPlantInventoryTotals"] = "Total plantes par espece",
+            ["UiPlantLightNeed"] = "Lumière",
+            ["UiPlantInventoryTotals"] = "Total plantes par espèce",
             ["UiLightLow"] = "Faible",
             ["UiLightMedium"] = "Moyenne",
             ["UiLightHigh"] = "Forte",
@@ -2290,12 +2311,12 @@ public partial class MainWindow : Window
             ["UiButtonDeletePlantMovement"] = "Supprimer la ligne",
             ["UiGridScientific"] = "Scientifique",
             ["UiGridGrowth"] = "Croissance",
-            ["UiPopulationSpecies"] = "Espece",
-            ["UiAnimalReferenceChoice"] = "Referentiel faune",
+            ["UiPopulationSpecies"] = "Espèce",
+            ["UiAnimalReferenceChoice"] = "Référentiel faune",
             ["UiPopulationType"] = "Type",
-            ["UiPopulationQuantity"] = "Quantite",
+            ["UiPopulationQuantity"] = "Quantité",
             ["UiPopulationFamily"] = "Famille",
-            ["UiPopulationInventoryTotals"] = "Total population par espece",
+            ["UiPopulationInventoryTotals"] = "Total population par espèce",
             ["UiPopulationTypeFish"] = "Poissons",
             ["UiPopulationTypeShrimp"] = "Crevettes",
             ["UiPopulationTypeSnail"] = "Mollusques",
@@ -2312,33 +2333,33 @@ public partial class MainWindow : Window
             ["UiInterventionFilterCleaning"] = "Nettoyage filtre",
             ["UiInterventionPopulationAdded"] = "Ajout population",
             ["UiInterventionPopulationRemoved"] = "Retrait population",
-            ["UiInterventionMedicalTreatment"] = "Traitement medical",
+            ["UiInterventionMedicalTreatment"] = "Traitement médical",
             ["UiInterventionOther"] = "Autre",
             ["UiInterventionProductName"] = "Produit",
-            ["UiInterventionProductQuantity"] = "Quantite produit",
-            ["UiInterventionWaterVolume"] = "Eau remplacee (L)",
-            ["UiInterventionWaterPercent"] = "Eau remplacee (%)",
+            ["UiInterventionProductQuantity"] = "Quantité produit",
+            ["UiInterventionWaterVolume"] = "Eau remplacée (L)",
+            ["UiInterventionWaterPercent"] = "Eau remplacée (%)",
             ["UiInterventionPopulationReason"] = "Raison population",
             ["UiInterventionPopulationCount"] = "Individus",
             ["UiButtonAddIntervention"] = "Ajouter l'intervention",
             ["UiButtonDeleteIntervention"] = "Supprimer l'intervention",
-            ["UiDbActionsHelp"] = "Actions base de donnees et maintenance.",
+            ["UiDbActionsHelp"] = "Actions base de données et maintenance.",
             ["UiButtonConfigureMySql"] = "Configurer MySQL",
             ["UiButtonInitializeMySql"] = "Initialiser MySQL",
             ["UiButtonSave"] = "Sauvegarder",
             ["UiLabelLanguage"] = "Langue",
-            ["UiLabelTheme"] = "Theme",
-            ["UiSettingsDatabaseActions"] = "Base de donnees",
+            ["UiLabelTheme"] = "Thème",
+            ["UiSettingsDatabaseActions"] = "Base de données",
             ["UiSettingsLocalization"] = "Langue",
             ["UiSettingsAppearance"] = "Apparence",
             ["UiApplicationLog"] = "Journal applicatif",
-            ["UiButtonRefreshLog"] = "Rafraichir log",
+            ["UiButtonRefreshLog"] = "Rafraîchir log",
             ["UiButtonOpenLog"] = "Ouvrir log",
             ["UiLabelFontSize"] = "Taille de police",
             ["UiFontSizeSmall"] = "Petite",
             ["UiFontSizeNormal"] = "Normale",
             ["UiFontSizeLarge"] = "Grande",
-            ["UiLabelDensity"] = "Densite",
+            ["UiLabelDensity"] = "Densité",
             ["UiDensityCompact"] = "Compacte",
             ["UiDensityComfortable"] = "Confortable",
             ["UiLabelAccentColor"] = "Couleur d'accentuation",
@@ -2346,21 +2367,21 @@ public partial class MainWindow : Window
             ["UiAccentBlue"] = "Bleu",
             ["UiAccentGreen"] = "Vert",
             ["UiAccentPurple"] = "Violet",
-            ["UiHealthLastMeasure"] = "Derniere mesure",
+            ["UiHealthLastMeasure"] = "Dernière mesure",
             ["UiHealthGlobalStatus"] = "Statut global",
             ["UiHealthTrends"] = "Tendances",
-            ["UiHealthCharts"] = "Graphiques d'evolution",
-            ["UiHealthPeriod"] = "Periode",
+            ["UiHealthCharts"] = "Graphiques d'évolution",
+            ["UiHealthPeriod"] = "Période",
             ["UiHealthPeriod7"] = "7 jours",
             ["UiHealthPeriod30"] = "30 jours",
             ["UiHealthPeriod90"] = "90 jours",
             ["UiHealthPeriodAll"] = "Tout l'historique",
-            ["UiHealthParameters"] = "Parametres a afficher",
+            ["UiHealthParameters"] = "Paramètres à afficher",
             ["UiHealthTargetRange"] = "Plage cible",
             ["UiHealthNoChartData"] = "Pas assez de mesures pour tracer un graphe.",
-            ["UiHealthActions"] = "Actions conseillees",
+            ["UiHealthActions"] = "Actions conseillées",
             ["UiHealthNoData"] = "Aucune mesure disponible pour ce contenant.",
-            ["UiHealthParameterColumn"] = "Parametre",
+            ["UiHealthParameterColumn"] = "Paramètre",
             ["UiHealthValueColumn"] = "Valeur",
             ["UiHealthTrendColumn"] = "Tendance",
             ["UiHealthAlertColumn"] = "Alerte",
@@ -2368,13 +2389,13 @@ public partial class MainWindow : Window
             ["HealthTrendUp"] = "Hausse",
             ["HealthTrendDown"] = "Baisse",
             ["HealthTrendStable"] = "Stable",
-            ["UiLangFrench"] = "Francais",
+            ["UiLangFrench"] = "Français",
             ["UiLangEnglish"] = "Anglais",
             ["UiLangGerman"] = "Allemand",
             ["UiThemeLight"] = "Clair",
             ["UiThemeDark"] = "Sombre",
             ["UiFilterSearch"] = "Recherche",
-            ["UiFilterPeriod"] = "Periode",
+            ["UiFilterPeriod"] = "Période",
             ["UiFilterMovement"] = "Mouvement",
             ["UiFilterPopulationType"] = "Famille",
             ["UiFilterInterventionType"] = "Type d'intervention",
@@ -2383,70 +2404,70 @@ public partial class MainWindow : Window
             ["UiMeasurementPeriod90"] = "90 jours",
             ["UiClearFilters"] = "Effacer filtres",
             ["UiNoRowsMatchFilters"] = "Aucune ligne ne correspond aux filtres.",
-            ["UiReferenceSearchCriteriaTitle"] = "Criteres de recherche",
-            ["UiReferenceSearchCriteriaIntro"] = "Choisis les criteres utilises pour filtrer les fiches candidates avant insertion dans le referentiel.",
-            ["UiReferenceSearchMinimumParameterGroups"] = "Nombre minimal de groupes de parametres",
-            ["UiReferenceSearchMinimumParameterGroupsHelp"] = "Valeur entre 1 et 8. Plus le nombre est eleve, plus les especes importees seront documentees.",
+            ["UiReferenceSearchCriteriaTitle"] = "Critères de recherche",
+            ["UiReferenceSearchCriteriaIntro"] = "Choisis les critères utilisés pour filtrer les fiches candidates avant insertion dans le référentiel.",
+            ["UiReferenceSearchMinimumParameterGroups"] = "Nombre minimal de groupes de paramètres",
+            ["UiReferenceSearchMinimumParameterGroupsHelp"] = "Valeur entre 1 et 8. Plus le nombre est élevé, plus les espèces importées seront documentées.",
             ["UiReferenceSearchInvalidMinimum"] = "Saisis un nombre entier entre 1 et 8.",
             ["UiDialogOk"] = "OK",
             ["UiDialogCancel"] = "Annuler",
-            ["StatusReady"] = "Pret. MySQL est optionnel au demarrage pour garder l'application utilisable hors ligne.",
-            ["StatusMySqlNotConfigured"] = "MySQL non configure. Utilise Configurer MySQL pour enregistrer une connexion locale.",
-            ["StatusMySqlConfiguredSecure"] = "MySQL configure depuis la configuration locale securisee.",
-            ["StatusMySqlConfiguredEnv"] = "MySQL configure via ADAQUA_MYSQL_CONNECTION_STRING.",
+            ["StatusReady"] = "Prêt. MySQL est optionnel au démarrage pour garder l'application utilisable hors ligne.",
+            ["StatusMySqlNotConfigured"] = "MySQL non configuré. Utilise Configurer MySQL pour enregistrer une connexion locale.",
+            ["StatusMySqlConfiguredSecure"] = "MySQL configuré depuis la configuration locale sécurisée.",
+            ["StatusMySqlConfiguredEnv"] = "MySQL configuré via ADAQUA_MYSQL_CONNECTION_STRING.",
             ["StatusReadFailed"] = "Lecture MySQL indisponible:",
-            ["StatusMySqlConfigSaved"] = "Configuration MySQL enregistree et active.",
-            ["StatusConfigSavedReadFailed"] = "Configuration enregistree, mais lecture MySQL impossible:",
-            ["StatusConfigureBeforeInit"] = "Configure MySQL avant d'initialiser le schema.",
-            ["StatusSchemaInitialized"] = "Schema MySQL initialise.",
+            ["StatusMySqlConfigSaved"] = "Configuration MySQL enregistrée et active.",
+            ["StatusConfigSavedReadFailed"] = "Configuration enregistrée, mais lecture MySQL impossible:",
+            ["StatusConfigureBeforeInit"] = "Configure MySQL avant d'initialiser le schéma.",
+            ["StatusSchemaInitialized"] = "Schéma MySQL initialisé.",
             ["StatusInitializationFailed"] = "Initialisation MySQL impossible:",
-            ["StatusConnectedNoAquarium"] = "MySQL connecte. Aucun contenant en base pour le moment.",
-            ["StatusConnectedAquariumCount"] = "MySQL connecte. {0} contenant(s) charge(s).",
+            ["StatusConnectedNoAquarium"] = "MySQL connecté. Aucun contenant en base pour le moment.",
+            ["StatusConnectedAquariumCount"] = "MySQL connecté. {0} contenant(s) chargé(s).",
             ["StatusLocalModeConfigure"] = "Mode local: configure MySQL pour sauvegarder en base.",
             ["StatusSaveInvalidInput"] = "Sauvegarde impossible: corrige les erreurs de saisie avant d'enregistrer.",
-            ["StatusAquariumSaved"] = "Contenant sauvegarde dans MySQL.",
+            ["StatusAquariumSaved"] = "Contenant sauvegardé dans MySQL.",
             ["StatusSaveFailed"] = "Enregistrement MySQL impossible:",
-            ["StatusNewAquariumSaved"] = "Nouveau contenant enregistre.",
-            ["StatusAquariumDeleted"] = "Contenant supprime.",
+            ["StatusNewAquariumSaved"] = "Nouveau contenant enregistré.",
+            ["StatusAquariumDeleted"] = "Contenant supprimé.",
             ["StatusAquariumDeleteFailed"] = "Suppression du contenant impossible:",
-            ["StatusSelectMeasurementDelete"] = "Selectionne une mesure a supprimer.",
-            ["StatusSelectMeasurementDuplicate"] = "Selectionne une mesure a dupliquer.",
-            ["StatusMeasurementSaved"] = "Mesure d'eau enregistree.",
-            ["StatusMeasurementDuplicated"] = "Mesure d'eau dupliquee et enregistree.",
-            ["StatusMeasurementDeleted"] = "Mesure d'eau supprimee.",
-            ["StatusSelectPlantDelete"] = "Selectionne une plante a supprimer.",
-            ["StatusPlantSaved"] = "Plante enregistree.",
-            ["StatusPlantDeleted"] = "Plante supprimee.",
-            ["StatusSelectPopulationDelete"] = "Selectionne une population a supprimer.",
-            ["StatusPopulationSaved"] = "Population enregistree.",
-            ["StatusPopulationDeleted"] = "Population supprimee.",
+            ["StatusSelectMeasurementDelete"] = "Sélectionne une mesure à supprimer.",
+            ["StatusSelectMeasurementDuplicate"] = "Sélectionne une mesure à dupliquer.",
+            ["StatusMeasurementSaved"] = "Mesure d'eau enregistrée.",
+            ["StatusMeasurementDuplicated"] = "Mesure d'eau dupliquée et enregistrée.",
+            ["StatusMeasurementDeleted"] = "Mesure d'eau supprimée.",
+            ["StatusSelectPlantDelete"] = "Sélectionne une plante à supprimer.",
+            ["StatusPlantSaved"] = "Plante enregistrée.",
+            ["StatusPlantDeleted"] = "Plante supprimée.",
+            ["StatusSelectPopulationDelete"] = "Sélectionne une population à supprimer.",
+            ["StatusPopulationSaved"] = "Population enregistrée.",
+            ["StatusPopulationDeleted"] = "Population supprimée.",
             ["StatusInterventionInvalidTime"] = "Heure d'intervention invalide. Utilise le format HH:mm.",
-            ["StatusSelectInterventionDelete"] = "Selectionne une intervention a supprimer.",
-            ["StatusInterventionSaved"] = "Intervention enregistree.",
-            ["StatusInterventionDeleted"] = "Intervention supprimee.",
-            ["StatusLanguageChanged"] = "Langue appliquee.",
-            ["StatusThemeChanged"] = "Theme applique.",
-            ["StatusAppearanceChanged"] = "Apparence appliquee.",
+            ["StatusSelectInterventionDelete"] = "Sélectionne une intervention à supprimer.",
+            ["StatusInterventionSaved"] = "Intervention enregistrée.",
+            ["StatusInterventionDeleted"] = "Intervention supprimée.",
+            ["StatusLanguageChanged"] = "Langue appliquée.",
+            ["StatusThemeChanged"] = "Thème appliqué.",
+            ["StatusAppearanceChanged"] = "Apparence appliquée.",
             ["HealthStatusNoData"] = "Aucune mesure",
             ["HealthStatusOk"] = "Stable",
-            ["HealthStatusWarning"] = "Alerte moderee",
+            ["HealthStatusWarning"] = "Alerte modérée",
             ["HealthStatusCritical"] = "Alerte critique",
             ["HealthAlertNoData"] = "N/A",
             ["HealthAlertOk"] = "OK",
-            ["HealthAlertWarning"] = "A surveiller",
+            ["HealthAlertWarning"] = "À surveiller",
             ["HealthAlertCritical"] = "Critique",
-            ["HealthActionNoData"] = "Ajoute une mesure d'eau pour activer le suivi de sante.",
-            ["HealthActionOk"] = "Parametres dans les plages cibles. Continuer la routine actuelle.",
-            ["HealthActionWarningNitrates"] = "Prevoir un changement d'eau partiel pour reduire les nitrates.",
-            ["HealthActionWarningPh"] = "Verifier le pH et ajuster progressivement si necessaire.",
-            ["HealthActionWarningHardness"] = "Verifier GH/KH et adapter l'eau de remplacement.",
-            ["HealthActionWarningGeneric"] = "Surveiller l'evolution sur les prochaines mesures.",
-            ["HealthActionCriticalWaterChange"] = "Effectuer un changement d'eau rapide et verifier filtration/aeration.",
-            ["HealthActionCriticalFeeding"] = "Reduire la nourriture temporairement pour limiter la charge azotee.",
-            ["HealthActionCriticalTemperature"] = "Corriger la temperature (chauffage/refroidissement) sans variation brutale.",
-            ["HealthActionCriticalGeneric"] = "Analyser l'eau et stabiliser les parametres critiques en priorite.",
+            ["HealthActionNoData"] = "Ajoute une mesure d'eau pour activer le suivi de santé.",
+            ["HealthActionOk"] = "Paramètres dans les plages cibles. Continuer la routine actuelle.",
+            ["HealthActionWarningNitrates"] = "Prévoir un changement d'eau partiel pour réduire les nitrates.",
+            ["HealthActionWarningPh"] = "Vérifier le pH et ajuster progressivement si nécessaire.",
+            ["HealthActionWarningHardness"] = "Vérifier GH/KH et adapter l'eau de remplacement.",
+            ["HealthActionWarningGeneric"] = "Surveiller l'évolution sur les prochaines mesures.",
+            ["HealthActionCriticalWaterChange"] = "Effectuer un changement d'eau rapide et vérifier filtration/aération.",
+            ["HealthActionCriticalFeeding"] = "Réduire la nourriture temporairement pour limiter la charge azotée.",
+            ["HealthActionCriticalTemperature"] = "Corriger la température (chauffage/refroidissement) sans variation brutale.",
+            ["HealthActionCriticalGeneric"] = "Analyser l'eau et stabiliser les paramètres critiques en priorité.",
             ["ConfirmDeleteTitle"] = "Confirmation de suppression",
-            ["ConfirmDeleteAquarium"] = "Supprimer le contenant \"{0}\" et toutes ses donnees associees ?",
+            ["ConfirmDeleteAquarium"] = "Supprimer le contenant \"{0}\" et toutes ses données associées ?",
             ["ConfirmDeleteMeasurement"] = "Supprimer la mesure du {0:g} ?",
             ["ConfirmDeletePlant"] = "Supprimer la plante \"{0}\" ?",
             ["ConfirmDeletePopulation"] = "Supprimer \"{0}\" de la population ?",
@@ -2455,7 +2476,7 @@ public partial class MainWindow : Window
             ["DefaultMainAquarium"] = "Bac principal",
             ["DefaultMainAquariumNote"] = "Premier contenant ADAqua.",
             ["DefaultPlantLight"] = "Faible",
-            ["DefaultNeonName"] = "Neon bleu"
+            ["DefaultNeonName"] = "Néon bleu"
         };
 
         var en = new Dictionary<string, string>(fr)
@@ -2512,6 +2533,11 @@ public partial class MainWindow : Window
             ["UiPlantScientificName"] = "Scientific name",
             ["UiPlantRefNoData"] = "No plant reference for this container type.",
             ["UiPlantRefEnvironment"] = "Environment",
+            ["UiAnimalRefGroup"] = "Group",
+            ["UiAnimalGroupFish"] = "Fish",
+            ["UiAnimalGroupShrimp"] = "Shrimp",
+            ["UiAnimalGroupSnail"] = "Molluscs",
+            ["UiAnimalGroupOther"] = "Other",
             ["UiPlantRefCommonName"] = "Common name",
             ["UiPlantRefScientificName"] = "Scientific name",
             ["UiPlantRefPhMin"] = "pH min",
@@ -2785,6 +2811,11 @@ public partial class MainWindow : Window
             ["UiPlantScientificName"] = "Wissenschaftlicher Name",
             ["UiPlantRefNoData"] = "Keine Pflanzenreferenz fuer diesen Behaeltertyp.",
             ["UiPlantRefEnvironment"] = "Umgebung",
+            ["UiAnimalRefGroup"] = "Gruppe",
+            ["UiAnimalGroupFish"] = "Fische",
+            ["UiAnimalGroupShrimp"] = "Garnelen",
+            ["UiAnimalGroupSnail"] = "Mollusken",
+            ["UiAnimalGroupOther"] = "Andere",
             ["UiPlantRefCommonName"] = "Trivialname",
             ["UiPlantRefScientificName"] = "Wissenschaftlicher Name",
             ["UiPlantRefPhMin"] = "pH min",
@@ -3016,6 +3047,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private sealed record HealthRule(string ParameterKey, Func<WaterParameters, decimal?> Selector, decimal CriticalMin, decimal WarningMin, decimal WarningMax, decimal CriticalMax);
 
     private const string WaterTypeFreshwaterTropical = "FreshwaterTropical";
+    private const string WaterTypeFreshwaterPond = "FreshwaterPond";
     private const string WaterTypeMarine = "Marine";
     private const string ContainerTypeAquarium = "Aquarium";
     private const string ContainerTypeFishPond = "FishPond";
@@ -3103,6 +3135,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string animalFilterAmmoniaMax = string.Empty;
     private string animalFilterNitritesMax = string.Empty;
     private string animalFilterNitratesMax = string.Empty;
+    private string animalReferenceGroupFilterCode = FilterAllCode;
     private string measurementSearchText = string.Empty;
     private string measurementPeriodFilterCode = FilterAllCode;
     private string plantSearchText = string.Empty;
@@ -3116,6 +3149,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private ICollectionView? plantsView;
     private ICollectionView? populationView;
     private ICollectionView? interventionsView;
+    private bool isGridRefreshQueued;
     private ContainerTypeOption? selectedAquariumContainerTypeOption;
     private WaterTypeOption? selectedAquariumWaterTypeOption;
     private int selectedTrendPeriodDays = 30;
@@ -3166,6 +3200,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ObservableCollection<FilterOption> MeasurementPeriodFilterOptions { get; } = [];
     public ObservableCollection<FilterOption> MovementFilterOptions { get; } = [];
     public ObservableCollection<FilterOption> PopulationTypeFilterOptions { get; } = [];
+    public ObservableCollection<FilterOption> AnimalReferenceGroupFilterOptions { get; } = [];
     public ObservableCollection<FilterOption> InterventionTypeFilterOptions { get; } = [];
     public int InterventionLocalizationVersion => interventionLocalizationVersion;
     public int MovementLocalizationVersion => movementLocalizationVersion;
@@ -3263,6 +3298,24 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     {
         get => selectedPopulation;
         set => SetField(ref selectedPopulation, value);
+    }
+
+    public PopulationType NewPopulationType
+    {
+        get => NewPopulation.Type;
+        set
+        {
+            if (NewPopulation.Type == value)
+            {
+                return;
+            }
+
+            NewPopulation.Type = value;
+            SelectedAnimalReferenceForNewPopulation = null;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(NewPopulation));
+            RebuildAnimalReferenceChoices();
+        }
     }
 
     public AquariumIntervention? SelectedIntervention
@@ -3396,7 +3449,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public string SelectedAquariumWaterType
     {
-        get => NormalizeWaterTypeCode(SelectedAquarium.WaterType);
+        get => IsSelectedContainerFishPond ? WaterTypeFreshwaterPond : NormalizeWaterTypeCode(SelectedAquarium.WaterType);
         set
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -3405,13 +3458,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 return;
             }
 
-            var normalized = NormalizeWaterTypeCode(value);
-            if (IsSelectedContainerFishPond)
+            var previousWaterType = SelectedAquarium.WaterType;
+            var previousContainerType = SelectedAquarium.ContainerType;
+            var selectedPondWater = string.Equals(value, WaterTypeFreshwaterPond, StringComparison.OrdinalIgnoreCase);
+            var normalized = selectedPondWater ? WaterTypeFreshwaterTropical : NormalizeWaterTypeCode(value);
+            SelectedAquarium.ContainerType = selectedPondWater ? ContainerTypeFishPond : ContainerTypeAquarium;
+            if (selectedPondWater)
             {
                 normalized = WaterTypeFreshwaterTropical;
             }
 
-            if (SelectedAquarium.WaterType == normalized)
+            if (SelectedAquarium.WaterType == normalized && SelectedAquarium.ContainerType == previousContainerType)
             {
                 SyncSelectedAquariumWaterTypeOption();
                 OnPropertyChanged();
@@ -3420,16 +3477,28 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             }
 
             SelectedAquarium.WaterType = normalized;
+            SyncSelectedAquariumContainerTypeOption();
             SyncSelectedAquariumWaterTypeOption();
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedAquariumContainerType));
+            OnPropertyChanged(nameof(SelectedAquariumContainerTypeOption));
             OnPropertyChanged(nameof(SelectedAquariumWaterTypeOption));
             OnPropertyChanged(nameof(SelectedAquarium));
             OnPropertyChanged(nameof(IsSelectedAquariumMarine));
+            OnPropertyChanged(nameof(IsSelectedContainerFishPond));
             RebuildHealthDashboard();
             RebuildPlantReferenceChoices();
             RebuildPlantReference();
             RebuildAnimalReference();
-            SelectedAquariumWaterTypeChanged?.Invoke(this, EventArgs.Empty);
+            if (SelectedAquarium.ContainerType != previousContainerType)
+            {
+                SelectedAquariumContainerTypeChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            if (SelectedAquarium.WaterType != previousWaterType)
+            {
+                SelectedAquariumWaterTypeChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 
@@ -3493,6 +3562,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public string AnimalFilterAmmoniaMax { get => animalFilterAmmoniaMax; set => SetField(ref animalFilterAmmoniaMax, value); }
     public string AnimalFilterNitritesMax { get => animalFilterNitritesMax; set => SetField(ref animalFilterNitritesMax, value); }
     public string AnimalFilterNitratesMax { get => animalFilterNitratesMax; set => SetField(ref animalFilterNitratesMax, value); }
+
+    public string AnimalReferenceGroupFilterCode
+    {
+        get => animalReferenceGroupFilterCode;
+        set
+        {
+            var normalized = NormalizeAnimalReferenceGroupFilterCode(value);
+            if (SetField(ref animalReferenceGroupFilterCode, normalized))
+            {
+                RebuildAnimalReference();
+            }
+        }
+    }
 
     public string PlantReferenceEnvironmentLabel
     {
@@ -3688,6 +3770,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             animalReferenceCatalog.Add(new AnimalReferenceItem(
                 reference.Id,
                 reference.Environment,
+                reference.Group,
                 reference.CommonName,
                 reference.CommonNameFr,
                 reference.CommonNameEn,
@@ -3875,14 +3958,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private void UpdateWaterTypeOptions()
     {
         WaterTypeOptions.Clear();
-        var isPond = selectedAquarium is not null && IsFishPondContainerType(selectedAquarium.ContainerType);
-        WaterTypeOptions.Add(new WaterTypeOption(
-            WaterTypeFreshwaterTropical,
-            isPond ? text("UiWaterTypeFreshwaterPond") : text("UiWaterTypeFreshwaterTropical")));
-        if (!isPond)
-        {
-            WaterTypeOptions.Add(new WaterTypeOption(WaterTypeMarine, text("UiWaterTypeMarine")));
-        }
+        WaterTypeOptions.Add(new WaterTypeOption(WaterTypeFreshwaterTropical, text("UiWaterTypeFreshwaterTropical")));
+        WaterTypeOptions.Add(new WaterTypeOption(WaterTypeFreshwaterPond, text("UiWaterTypeFreshwaterPond")));
+        WaterTypeOptions.Add(new WaterTypeOption(WaterTypeMarine, text("UiWaterTypeMarine")));
 
         SyncSelectedAquariumWaterTypeOption();
         OnPropertyChanged(nameof(WaterTypeOptions));
@@ -3902,7 +3980,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     private void SyncSelectedAquariumWaterTypeOption()
     {
-        var option = WaterTypeOptions.FirstOrDefault(candidate => candidate.Code == SelectedAquariumWaterType);
+        var selectedCode = IsSelectedContainerFishPond
+            ? WaterTypeFreshwaterPond
+            : SelectedAquariumWaterType;
+        var option = WaterTypeOptions.FirstOrDefault(candidate => candidate.Code == selectedCode);
         if (!ReferenceEquals(selectedAquariumWaterTypeOption, option))
         {
             selectedAquariumWaterTypeOption = option;
@@ -3921,6 +4002,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedAquarium));
         OnPropertyChanged(nameof(IsSelectedAquariumMarine));
         OnPropertyChanged(nameof(IsSelectedContainerFishPond));
+    }
+
+    public void RefreshSelectedAquariumClassificationAfterPersist()
+    {
+        RefreshSelectedAquariumClassificationBindings();
     }
 
     private void UpdateInterventionTypeOptions()
@@ -3967,6 +4053,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             new FilterOption(nameof(PopulationType.Other), text("UiPopulationTypeOther")));
 
         ResetOptions(
+            AnimalReferenceGroupFilterOptions,
+            new FilterOption(FilterAllCode, text("UiFilterAll")),
+            new FilterOption(nameof(AnimalReferenceGroup.Fish), text("UiAnimalGroupFish")),
+            new FilterOption(nameof(AnimalReferenceGroup.Shrimp), text("UiAnimalGroupShrimp")),
+            new FilterOption(nameof(AnimalReferenceGroup.Snail), text("UiAnimalGroupSnail")),
+            new FilterOption(nameof(AnimalReferenceGroup.Other), text("UiAnimalGroupOther")));
+
+        ResetOptions(
             InterventionTypeFilterOptions,
             new FilterOption(FilterAllCode, text("UiFilterAll")),
             new FilterOption(nameof(InterventionType.WaterChange), text("UiInterventionWaterChange")),
@@ -3980,6 +4074,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(MeasurementPeriodFilterOptions));
         OnPropertyChanged(nameof(MovementFilterOptions));
         OnPropertyChanged(nameof(PopulationTypeFilterOptions));
+        OnPropertyChanged(nameof(AnimalReferenceGroupFilterOptions));
         OnPropertyChanged(nameof(InterventionTypeFilterOptions));
     }
 
@@ -4287,6 +4382,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         NewPopulation = new PopulationMember();
         SelectedAnimalReferenceForNewPopulation = null;
         OnPropertyChanged(nameof(NewPopulation));
+        OnPropertyChanged(nameof(NewPopulationType));
+        RebuildAnimalReferenceChoices();
         RefreshSelectedAquarium();
     }
 
@@ -4296,10 +4393,27 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         NewPopulation.SpeciesName = reference.ScientificName;
         NewPopulation.Type = ResolvePopulationType(reference);
         OnPropertyChanged(nameof(NewPopulation));
+        OnPropertyChanged(nameof(NewPopulationType));
+        RebuildAnimalReferenceChoices();
     }
 
     private static PopulationType ResolvePopulationType(AnimalReferenceItem reference)
     {
+        if (reference.Group == AnimalReferenceGroup.Shrimp)
+        {
+            return PopulationType.Shrimp;
+        }
+
+        if (reference.Group == AnimalReferenceGroup.Snail)
+        {
+            return PopulationType.Snail;
+        }
+
+        if (reference.Group == AnimalReferenceGroup.Other)
+        {
+            return PopulationType.Other;
+        }
+
         var searchText = NormalizeChoiceText(string.Join(
             ' ',
             reference.LocalizedCommonName,
@@ -4322,8 +4436,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         if (searchText.Contains("escargot", StringComparison.Ordinal)
+            || searchText.Contains("mollusque", StringComparison.Ordinal)
+            || searchText.Contains("mollusc", StringComparison.Ordinal)
+            || searchText.Contains("mollusk", StringComparison.Ordinal)
             || searchText.Contains("snail", StringComparison.Ordinal)
             || searchText.Contains("schnecke", StringComparison.Ordinal)
+            || searchText.Contains("mollusken", StringComparison.Ordinal)
+            || searchText.Contains("bivalve", StringComparison.Ordinal)
+            || searchText.Contains("clam", StringComparison.Ordinal)
+            || searchText.Contains("oyster", StringComparison.Ordinal)
+            || searchText.Contains("scallop", StringComparison.Ordinal)
+            || searchText.Contains("conch", StringComparison.Ordinal)
+            || searchText.Contains("cowrie", StringComparison.Ordinal)
             || searchText.Contains("neritina", StringComparison.Ordinal)
             || searchText.Contains("nerite", StringComparison.Ordinal)
             || searchText.Contains("pomacea", StringComparison.Ordinal)
@@ -4333,6 +4457,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         return PopulationType.Fish;
+    }
+
+    private static bool MatchesPopulationTypeForNewPopulation(AnimalReferenceItem reference, PopulationType populationType)
+    {
+        return reference.Group == MapPopulationTypeToAnimalReferenceGroup(populationType);
+    }
+
+    private static AnimalReferenceGroup MapPopulationTypeToAnimalReferenceGroup(PopulationType populationType)
+    {
+        return populationType switch
+        {
+            PopulationType.Shrimp => AnimalReferenceGroup.Shrimp,
+            PopulationType.Snail => AnimalReferenceGroup.Snail,
+            PopulationType.Other => AnimalReferenceGroup.Other,
+            _ => AnimalReferenceGroup.Fish
+        };
     }
 
     public void DeleteSelectedPopulation()
@@ -4654,11 +4794,70 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     private void RefreshGridViews()
     {
-        MeasurementsView?.Refresh();
-        PlantsView?.Refresh();
-        PopulationView?.Refresh();
-        InterventionsView?.Refresh();
-        RefreshGridResultStates();
+        if (TryRefreshGridViews())
+        {
+            RefreshGridResultStates();
+            return;
+        }
+
+        QueueGridViewsRefresh();
+    }
+
+    private bool TryRefreshGridViews()
+    {
+        return TryRefreshView(MeasurementsView)
+            & TryRefreshView(PlantsView)
+            & TryRefreshView(PopulationView)
+            & TryRefreshView(InterventionsView);
+    }
+
+    private static bool TryRefreshView(ICollectionView? view)
+    {
+        if (view is null)
+        {
+            return true;
+        }
+
+        if (view is IEditableCollectionView editableView
+            && (editableView.IsAddingNew || editableView.IsEditingItem))
+        {
+            return false;
+        }
+
+        try
+        {
+            view.Refresh();
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    private void QueueGridViewsRefresh()
+    {
+        if (isGridRefreshQueued)
+        {
+            return;
+        }
+
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+        {
+            RefreshGridResultStates();
+            return;
+        }
+
+        isGridRefreshQueued = true;
+        _ = dispatcher.BeginInvoke(
+            new Action(() =>
+            {
+                isGridRefreshQueued = false;
+                TryRefreshGridViews();
+                RefreshGridResultStates();
+            }),
+            DispatcherPriority.ContextIdle);
     }
 
     private void RefreshGridResultStates()
@@ -4841,6 +5040,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return Enum.TryParse<PopulationType>(value, out var type)
             ? type.ToString()
             : FilterAllCode;
+    }
+
+    private static string NormalizeAnimalReferenceGroupFilterCode(string? value)
+    {
+        return Enum.TryParse<AnimalReferenceGroup>(value, out var group)
+            ? group.ToString()
+            : FilterAllCode;
+    }
+
+    private static bool MatchesAnimalReferenceGroupFilter(AnimalReferenceGroup group, string filterCode)
+    {
+        return filterCode == FilterAllCode
+            || (Enum.TryParse<AnimalReferenceGroup>(filterCode, out var filterGroup) && group == filterGroup);
     }
 
     private static string NormalizeInterventionTypeFilterCode(string? value)
@@ -5193,8 +5405,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         var environment = ResolveAnimalEnvironmentType(selectedAquarium.WaterType);
+        var populationType = NewPopulation.Type;
         foreach (var item in animalReferenceCatalog
             .Where(item => item.Environment == environment)
+            .Where(item => MatchesPopulationTypeForNewPopulation(item, populationType))
             .OrderBy(item => item.LocalizedCommonName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(item => item.ScientificName, StringComparer.CurrentCultureIgnoreCase))
         {
@@ -5225,12 +5439,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         AnimalFilterAmmoniaMax = string.Empty;
         AnimalFilterNitritesMax = string.Empty;
         AnimalFilterNitratesMax = string.Empty;
+        AnimalReferenceGroupFilterCode = FilterAllCode;
         RebuildAnimalReference();
     }
 
     private bool MatchesAnimalFilters(AnimalReferenceItem item)
     {
-        return MatchesMin(item.PhMin, AnimalFilterPhMin)
+        return MatchesAnimalReferenceGroupFilter(item.Group, AnimalReferenceGroupFilterCode)
+            && MatchesMin(item.PhMin, AnimalFilterPhMin)
             && MatchesMax(item.PhMax, AnimalFilterPhMax)
             && MatchesMin(item.GhMin, AnimalFilterGhMin)
             && MatchesMax(item.GhMax, AnimalFilterGhMax)
@@ -5808,6 +6024,7 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
     public AnimalReferenceItem(
         Guid id,
         AnimalReferenceEnvironment environment,
+        AnimalReferenceGroup group,
         string commonName,
         string commonNameFr,
         string commonNameEn,
@@ -5835,6 +6052,7 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
     {
         Id = id;
         Environment = environment;
+        Group = group;
         CommonName = commonName;
         CommonNameFr = commonNameFr;
         CommonNameEn = commonNameEn;
@@ -5864,6 +6082,7 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
 
     public Guid Id { get; }
     public AnimalReferenceEnvironment Environment { get; }
+    public AnimalReferenceGroup Group { get; }
     public string CommonName { get; }
     public string CommonNameFr { get; }
     public string CommonNameEn { get; }
@@ -5922,6 +6141,31 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
         _ => Environment == AnimalReferenceEnvironment.Marine ? "Eau de mer" : "Eau douce"
     };
 
+    public string GroupLabel => currentLanguage switch
+    {
+        "en" => Group switch
+        {
+            AnimalReferenceGroup.Shrimp => "Shrimp",
+            AnimalReferenceGroup.Snail => "Molluscs",
+            AnimalReferenceGroup.Other => "Other",
+            _ => "Fish"
+        },
+        "de" => Group switch
+        {
+            AnimalReferenceGroup.Shrimp => "Garnelen",
+            AnimalReferenceGroup.Snail => "Mollusken",
+            AnimalReferenceGroup.Other => "Andere",
+            _ => "Fische"
+        },
+        _ => Group switch
+        {
+            AnimalReferenceGroup.Shrimp => "Crevettes",
+            AnimalReferenceGroup.Snail => "Mollusques",
+            AnimalReferenceGroup.Other => "Autres",
+            _ => "Poissons"
+        }
+    };
+
     public string LocalizedCommonName => currentLanguage switch
     {
         "en" => FirstNonEmpty(CommonNameEn, CommonName, CommonNameFr, CommonNameDe, ScientificName),
@@ -5942,6 +6186,7 @@ public sealed class AnimalReferenceItem : INotifyPropertyChanged
 
         currentLanguage = normalized;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EnvironmentLabel)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GroupLabel)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCommonName)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedBehavior)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LocalizedCompatibility)));
@@ -6009,6 +6254,7 @@ internal static class ReferenceTextLocalizer
         ["epiphyte"] = ("Epiphyte", "Epiphyt"),
         ["espace important"] = ("Needs significant space", "Braucht viel Platz"),
         ["eviter poissons agressifs"] = ("Avoid aggressive fish", "Aggressive Fische vermeiden"),
+        ["eviter gros predateurs"] = ("Avoid large predators", "Grosse Raeuber vermeiden"),
         ["excellente anti-algues"] = ("Excellent against algae", "Ausgezeichnet gegen Algen"),
         ["excellente pour crevettes"] = ("Excellent for shrimp", "Ausgezeichnet fuer Garnelen"),
         ["faible"] = ("Low", "Niedrig"),
@@ -6023,6 +6269,7 @@ internal static class ReferenceTextLocalizer
         ["gazonnante"] = ("Carpeting", "Teppichbildend"),
         ["gregaire"] = ("Gregarious", "Gesellig"),
         ["gregaire de fond"] = ("Gregarious bottom-dweller", "Geselliger Bodenbewohner"),
+        ["gregaire paisible"] = ("Peaceful gregarious species", "Friedliche gesellige Art"),
         ["grandes feuilles rubanees"] = ("Large ribbon-like leaves", "Grosse bandfoermige Blaetter"),
         ["hepatique flottante"] = ("Floating liverwort", "Schwimmendes Lebermoos"),
         ["hierarchique"] = ("Hierarchical", "Hierarchisch"),
@@ -6037,6 +6284,9 @@ internal static class ReferenceTextLocalizer
         ["moyenne a elevee"] = ("Medium to high", "Mittel bis hoch"),
         ["moyenne a forte"] = ("Medium to high", "Mittel bis stark"),
         ["nageur rapide"] = ("Fast swimmer", "Schneller Schwimmer"),
+        ["paisible algivore"] = ("Peaceful algae grazer", "Friedlicher Algenfresser"),
+        ["paisible detritivore"] = ("Peaceful detritus grazer", "Friedlicher Detritusfresser"),
+        ["paisible nettoyeuse"] = ("Peaceful cleaner", "Friedlicher Putzer"),
         ["optionnel"] = ("Optional", "Optional"),
         ["peut devenir envahissante"] = ("Can become invasive", "Kann wuchernd werden"),
         ["peut etre territorial"] = ("Can be territorial", "Kann territorial sein"),

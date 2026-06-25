@@ -31,24 +31,24 @@
         <sys:Double x:Key="DataGridRowHeight">30</sys:Double>
         <sys:Double x:Key="DataGridColumnHeaderHeight">36</sys:Double>
         <Thickness x:Key="ButtonPadding">14,6</Thickness>
-        <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, bassins, parametres d'eau, plantes et population</sys:String>
+        <sys:String x:Key="UiAppSubtitle">Gestion des aquariums, bassins, paramètres d'eau, plantes et population</sys:String>
         <sys:String x:Key="UiSectionAquariums">Contenants</sys:String>
         <sys:String x:Key="UiButtonNewAquarium">Nouveau contenant</sys:String>
         <sys:String x:Key="UiButtonDeleteAquarium">Supprimer contenant</sys:String>
         <sys:String x:Key="UiTabSheet">Fiche</sys:String>
-        <sys:String x:Key="UiTabParameters">Parametres</sys:String>
+        <sys:String x:Key="UiTabParameters">Paramètres</sys:String>
         <sys:String x:Key="UiTabHealth">Santé</sys:String>
         <sys:String x:Key="UiTabPlants">Plantes</sys:String>
-        <sys:String x:Key="UiTabPlantReference">Referentiel plantes</sys:String>
+        <sys:String x:Key="UiTabPlantReference">Référentiel plantes</sys:String>
         <sys:String x:Key="UiTabPopulation">Population</sys:String>
-        <sys:String x:Key="UiTabAnimalReference">Referentiel population</sys:String>
+        <sys:String x:Key="UiTabAnimalReference">Référentiel population</sys:String>
         <sys:String x:Key="UiTabInterventions">Interventions</sys:String>
-        <sys:String x:Key="UiTabSettings">Parametrages</sys:String>
+        <sys:String x:Key="UiTabSettings">Paramétrages</sys:String>
         <sys:String x:Key="UiLabelName">Nom</sys:String>
         <sys:String x:Key="UiLabelVolume">Volume (L)</sys:String>
         <sys:String x:Key="UiLabelContainerType">Type de contenant</sys:String>
         <sys:String x:Key="UiContainerTypeAquarium">Aquarium</sys:String>
-        <sys:String x:Key="UiContainerTypeFishPond">Bassin a poissons</sys:String>
+        <sys:String x:Key="UiContainerTypeFishPond">Bassin à poissons</sys:String>
         <sys:String x:Key="UiLabelWaterType">Type d'eau</sys:String>
         <sys:String x:Key="UiWaterTypeFreshwaterTropical">Eau douce</sys:String>
         <sys:String x:Key="UiWaterTypeFreshwaterPond">Eau douce de bassin</sys:String>
@@ -61,7 +61,7 @@
         <sys:String x:Key="UiLabelPh">pH</sys:String>
         <sys:String x:Key="UiLabelGh">GH</sys:String>
         <sys:String x:Key="UiLabelKh">KH</sys:String>
-        <sys:String x:Key="UiLabelTemperature">Temperature C</sys:String>
+        <sys:String x:Key="UiLabelTemperature">Température C</sys:String>
         <sys:String x:Key="UiButtonAddMeasurement">Ajouter la mesure</sys:String>
         <sys:String x:Key="UiButtonDuplicateMeasurement">Dupliquer la mesure</sys:String>
         <sys:String x:Key="UiButtonDeleteMeasurement">Supprimer la mesure</sys:String>
@@ -72,14 +72,19 @@
         <sys:String x:Key="UiMovementRemoval">Retrait</sys:String>
         <sys:String x:Key="UiPlantQuantity">Nombre</sys:String>
         <sys:String x:Key="UiPlantCommonName">Nom courant</sys:String>
-        <sys:String x:Key="UiPlantReferenceChoice">Referentiel</sys:String>
+        <sys:String x:Key="UiPlantReferenceChoice">Référentiel</sys:String>
         <sys:String x:Key="UiPlantScientificName">Nom scientifique</sys:String>
         <sys:String x:Key="UiPlantGrowth">Croissance</sys:String>
         <sys:String x:Key="UiGrowthSlow">Lente</sys:String>
         <sys:String x:Key="UiGrowthMedium">Moyenne</sys:String>
         <sys:String x:Key="UiGrowthFast">Rapide</sys:String>
-        <sys:String x:Key="UiPlantLightNeed">Lumiere</sys:String>
+        <sys:String x:Key="UiPlantLightNeed">Lumière</sys:String>
         <sys:String x:Key="UiPlantRefEnvironment">Type</sys:String>
+        <sys:String x:Key="UiAnimalRefGroup">Groupe</sys:String>
+        <sys:String x:Key="UiAnimalGroupFish">Poissons</sys:String>
+        <sys:String x:Key="UiAnimalGroupShrimp">Crevettes</sys:String>
+        <sys:String x:Key="UiAnimalGroupSnail">Mollusques</sys:String>
+        <sys:String x:Key="UiAnimalGroupOther">Autres</sys:String>
         <sys:String x:Key="UiPlantRefCommonName">Nom courant</sys:String>
         <sys:String x:Key="UiPlantRefScientificName">Nom scientifique</sys:String>
         <sys:String x:Key="UiPlantRefPhMin">pH min</sys:String>
@@ -97,23 +102,23 @@
         <sys:String x:Key="UiPlantRefNo3Min">Nitrates min</sys:String>
         <sys:String x:Key="UiPlantRefNo3Max">Nitrates max</sys:String>
         <sys:String x:Key="UiPlantRefVolumeMin">Volume min L</sys:String>
-        <sys:String x:Key="UiPlantRefLight">Lumiere</sys:String>
+        <sys:String x:Key="UiPlantRefLight">Lumière</sys:String>
         <sys:String x:Key="UiPlantRefCo2">CO2</sys:String>
         <sys:String x:Key="UiPlantRefFertilization">Fertilisation</sys:String>
         <sys:String x:Key="UiPlantRefGrowth">Croissance</sys:String>
         <sys:String x:Key="UiPlantRefPlacement">Emplacement</sys:String>
         <sys:String x:Key="UiPlantRefBehavior">Comportement</sys:String>
-        <sys:String x:Key="UiPlantRefCompatibility">Compatibilites</sys:String>
+        <sys:String x:Key="UiPlantRefCompatibility">Compatibilités</sys:String>
         <sys:String x:Key="UiPlantRefSourceUrl">Source URL</sys:String>
-        <sys:String x:Key="UiPlantRefNoData">Aucune plante de reference pour ce type de contenant.</sys:String>
-        <sys:String x:Key="UiPlantRefSearchMore">Recherches complementaires</sys:String>
-        <sys:String x:Key="UiPlantRefCheckCompatibility">Verifier compatibilite</sys:String>
-        <sys:String x:Key="UiPlantRefEdit">Modifier reference</sys:String>
+        <sys:String x:Key="UiPlantRefNoData">Aucune plante de référence pour ce type de contenant.</sys:String>
+        <sys:String x:Key="UiPlantRefSearchMore">Recherches complémentaires</sys:String>
+        <sys:String x:Key="UiPlantRefCheckCompatibility">Vérifier compatibilité</sys:String>
+        <sys:String x:Key="UiPlantRefEdit">Modifier référence</sys:String>
         <sys:String x:Key="UiPlantRefApplyFilters">Appliquer filtres</sys:String>
-        <sys:String x:Key="UiPlantRefResetFilters">Reinitialiser filtres</sys:String>
-        <sys:String x:Key="UiPlantRefDelete">Supprimer reference</sys:String>
-        <sys:String x:Key="UiPlantRefResetCatalog">Reinitialiser referentiel</sys:String>
-        <sys:String x:Key="UiPlantInventoryTotals">Total plantes par espece</sys:String>
+        <sys:String x:Key="UiPlantRefResetFilters">Réinitialiser filtres</sys:String>
+        <sys:String x:Key="UiPlantRefDelete">Supprimer référence</sys:String>
+        <sys:String x:Key="UiPlantRefResetCatalog">Réinitialiser référentiel</sys:String>
+        <sys:String x:Key="UiPlantInventoryTotals">Total plantes par espèce</sys:String>
         <sys:String x:Key="UiLightLow">Faible</sys:String>
         <sys:String x:Key="UiLightMedium">Moyenne</sys:String>
         <sys:String x:Key="UiLightHigh">Forte</sys:String>
@@ -123,12 +128,12 @@
         <sys:String x:Key="UiButtonDeletePlantMovement">Supprimer la ligne</sys:String>
         <sys:String x:Key="UiGridScientific">Scientifique</sys:String>
         <sys:String x:Key="UiGridGrowth">Croissance</sys:String>
-        <sys:String x:Key="UiPopulationSpecies">Espece</sys:String>
-        <sys:String x:Key="UiAnimalReferenceChoice">Referentiel faune</sys:String>
+        <sys:String x:Key="UiPopulationSpecies">Espèce</sys:String>
+        <sys:String x:Key="UiAnimalReferenceChoice">Référentiel faune</sys:String>
         <sys:String x:Key="UiPopulationType">Type</sys:String>
-        <sys:String x:Key="UiPopulationQuantity">Quantite</sys:String>
+        <sys:String x:Key="UiPopulationQuantity">Quantité</sys:String>
         <sys:String x:Key="UiPopulationFamily">Famille</sys:String>
-        <sys:String x:Key="UiPopulationInventoryTotals">Total population par espece</sys:String>
+        <sys:String x:Key="UiPopulationInventoryTotals">Total population par espèce</sys:String>
         <sys:String x:Key="UiPopulationTypeFish">Poissons</sys:String>
         <sys:String x:Key="UiPopulationTypeShrimp">Crevettes</sys:String>
         <sys:String x:Key="UiPopulationTypeSnail">Mollusques</sys:String>
@@ -145,33 +150,33 @@
         <sys:String x:Key="UiInterventionFilterCleaning">Nettoyage filtre</sys:String>
         <sys:String x:Key="UiInterventionPopulationAdded">Ajout population</sys:String>
         <sys:String x:Key="UiInterventionPopulationRemoved">Retrait population</sys:String>
-        <sys:String x:Key="UiInterventionMedicalTreatment">Traitement medical</sys:String>
+        <sys:String x:Key="UiInterventionMedicalTreatment">Traitement médical</sys:String>
         <sys:String x:Key="UiInterventionOther">Autre</sys:String>
         <sys:String x:Key="UiInterventionProductName">Produit</sys:String>
-        <sys:String x:Key="UiInterventionProductQuantity">Quantite produit</sys:String>
-        <sys:String x:Key="UiInterventionWaterVolume">Eau remplacee (L)</sys:String>
-        <sys:String x:Key="UiInterventionWaterPercent">Eau remplacee (%)</sys:String>
+        <sys:String x:Key="UiInterventionProductQuantity">Quantité produit</sys:String>
+        <sys:String x:Key="UiInterventionWaterVolume">Eau remplacée (L)</sys:String>
+        <sys:String x:Key="UiInterventionWaterPercent">Eau remplacée (%)</sys:String>
         <sys:String x:Key="UiInterventionPopulationReason">Raison population</sys:String>
         <sys:String x:Key="UiInterventionPopulationCount">Individus</sys:String>
         <sys:String x:Key="UiButtonAddIntervention">Ajouter l'intervention</sys:String>
         <sys:String x:Key="UiButtonDeleteIntervention">Supprimer l'intervention</sys:String>
-        <sys:String x:Key="UiDbActionsHelp">Actions base de donnees et maintenance.</sys:String>
+        <sys:String x:Key="UiDbActionsHelp">Actions base de données et maintenance.</sys:String>
         <sys:String x:Key="UiButtonConfigureMySql">Configurer MySQL</sys:String>
         <sys:String x:Key="UiButtonInitializeMySql">Initialiser MySQL</sys:String>
         <sys:String x:Key="UiButtonSave">Sauvegarder</sys:String>
         <sys:String x:Key="UiLabelLanguage">Langue</sys:String>
-        <sys:String x:Key="UiLabelTheme">Theme</sys:String>
-        <sys:String x:Key="UiSettingsDatabaseActions">Base de donnees</sys:String>
+        <sys:String x:Key="UiLabelTheme">Thème</sys:String>
+        <sys:String x:Key="UiSettingsDatabaseActions">Base de données</sys:String>
         <sys:String x:Key="UiSettingsLocalization">Langue</sys:String>
         <sys:String x:Key="UiSettingsAppearance">Apparence</sys:String>
         <sys:String x:Key="UiApplicationLog">Journal applicatif</sys:String>
-        <sys:String x:Key="UiButtonRefreshLog">Rafraichir log</sys:String>
+        <sys:String x:Key="UiButtonRefreshLog">Rafraîchir log</sys:String>
         <sys:String x:Key="UiButtonOpenLog">Ouvrir log</sys:String>
         <sys:String x:Key="UiLabelFontSize">Taille de police</sys:String>
         <sys:String x:Key="UiFontSizeSmall">Petite</sys:String>
         <sys:String x:Key="UiFontSizeNormal">Normale</sys:String>
         <sys:String x:Key="UiFontSizeLarge">Grande</sys:String>
-        <sys:String x:Key="UiLabelDensity">Densite</sys:String>
+        <sys:String x:Key="UiLabelDensity">Densité</sys:String>
         <sys:String x:Key="UiDensityCompact">Compacte</sys:String>
         <sys:String x:Key="UiDensityComfortable">Confortable</sys:String>
         <sys:String x:Key="UiLabelAccentColor">Couleur d'accentuation</sys:String>
@@ -179,21 +184,21 @@
         <sys:String x:Key="UiAccentBlue">Bleu</sys:String>
         <sys:String x:Key="UiAccentGreen">Vert</sys:String>
         <sys:String x:Key="UiAccentPurple">Violet</sys:String>
-        <sys:String x:Key="UiHealthLastMeasure">Derniere mesure</sys:String>
+        <sys:String x:Key="UiHealthLastMeasure">Dernière mesure</sys:String>
         <sys:String x:Key="UiHealthGlobalStatus">Statut global</sys:String>
         <sys:String x:Key="UiHealthTrends">Tendances</sys:String>
-        <sys:String x:Key="UiHealthCharts">Graphiques d'evolution</sys:String>
-        <sys:String x:Key="UiHealthPeriod">Periode</sys:String>
+        <sys:String x:Key="UiHealthCharts">Graphiques d'évolution</sys:String>
+        <sys:String x:Key="UiHealthPeriod">Période</sys:String>
         <sys:String x:Key="UiHealthPeriod7">7 jours</sys:String>
         <sys:String x:Key="UiHealthPeriod30">30 jours</sys:String>
         <sys:String x:Key="UiHealthPeriod90">90 jours</sys:String>
         <sys:String x:Key="UiHealthPeriodAll">Tout l'historique</sys:String>
-        <sys:String x:Key="UiHealthParameters">Parametres a afficher</sys:String>
+        <sys:String x:Key="UiHealthParameters">Paramètres à afficher</sys:String>
         <sys:String x:Key="UiHealthTargetRange">Plage cible</sys:String>
         <sys:String x:Key="UiHealthNoChartData">Pas assez de mesures pour tracer un graphe.</sys:String>
-        <sys:String x:Key="UiHealthActions">Actions conseillees</sys:String>
+        <sys:String x:Key="UiHealthActions">Actions conseillées</sys:String>
         <sys:String x:Key="UiHealthNoData">Aucune mesure disponible pour ce contenant.</sys:String>
-        <sys:String x:Key="UiHealthParameterColumn">Parametre</sys:String>
+        <sys:String x:Key="UiHealthParameterColumn">Paramètre</sys:String>
         <sys:String x:Key="UiHealthValueColumn">Valeur</sys:String>
         <sys:String x:Key="UiHealthTrendColumn">Tendance</sys:String>
         <sys:String x:Key="UiHealthAlertColumn">Alerte</sys:String>
@@ -203,14 +208,14 @@
         <sys:String x:Key="UiWaterParameterPh">pH</sys:String>
         <sys:String x:Key="UiWaterParameterGh">GH</sys:String>
         <sys:String x:Key="UiWaterParameterKh">KH</sys:String>
-        <sys:String x:Key="UiWaterParameterTemperature">Temperature</sys:String>
-        <sys:String x:Key="UiLangFrench">Francais</sys:String>
+        <sys:String x:Key="UiWaterParameterTemperature">Température</sys:String>
+        <sys:String x:Key="UiLangFrench">Français</sys:String>
         <sys:String x:Key="UiLangEnglish">Anglais</sys:String>
         <sys:String x:Key="UiLangGerman">Allemand</sys:String>
         <sys:String x:Key="UiThemeLight">Clair</sys:String>
         <sys:String x:Key="UiThemeDark">Sombre</sys:String>
         <sys:String x:Key="UiFilterSearch">Recherche</sys:String>
-        <sys:String x:Key="UiFilterPeriod">Periode</sys:String>
+        <sys:String x:Key="UiFilterPeriod">Période</sys:String>
         <sys:String x:Key="UiFilterMovement">Mouvement</sys:String>
         <sys:String x:Key="UiFilterPopulationType">Famille</sys:String>
         <sys:String x:Key="UiFilterInterventionType">Type d'intervention</sys:String>
@@ -1252,6 +1257,18 @@
                             <DockPanel Margin="0,18,0,0">
                                 <UniformGrid DockPanel.Dock="Top" Columns="8">
                                     <StackPanel>
+                                        <TextBlock Text="{DynamicResource UiPopulationType}" />
+                                        <ComboBox SelectedValuePath="Tag"
+                                                  SelectedValue="{Binding NewPopulationType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Margin="0,4,12,12"
+                                                  MinHeight="34">
+                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeFish}" Tag="{x:Static domain:PopulationType.Fish}" />
+                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeShrimp}" Tag="{x:Static domain:PopulationType.Shrimp}" />
+                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeSnail}" Tag="{x:Static domain:PopulationType.Snail}" />
+                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeOther}" Tag="{x:Static domain:PopulationType.Other}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel>
                                         <TextBlock Text="{DynamicResource UiAnimalReferenceChoice}" />
                                         <ComboBox ItemsSource="{Binding AnimalReferenceChoices}"
                                                   SelectedItem="{Binding SelectedAnimalReferenceForNewPopulation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -1284,18 +1301,6 @@
                                                   MinHeight="34">
                                             <ComboBoxItem Content="{DynamicResource UiMovementAddition}" Tag="{x:Static domain:InventoryMovementType.Addition}" />
                                             <ComboBoxItem Content="{DynamicResource UiMovementRemoval}" Tag="{x:Static domain:InventoryMovementType.Removal}" />
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel>
-                                        <TextBlock Text="{DynamicResource UiPopulationType}" />
-                                        <ComboBox SelectedValuePath="Tag"
-                                                  SelectedValue="{Binding NewPopulation.Type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  Margin="0,4,12,12"
-                                                  MinHeight="34">
-                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeFish}" Tag="{x:Static domain:PopulationType.Fish}" />
-                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeShrimp}" Tag="{x:Static domain:PopulationType.Shrimp}" />
-                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeSnail}" Tag="{x:Static domain:PopulationType.Snail}" />
-                                            <ComboBoxItem Content="{DynamicResource UiPopulationTypeOther}" Tag="{x:Static domain:PopulationType.Other}" />
                                         </ComboBox>
                                     </StackPanel>
                                     <StackPanel>
@@ -1798,6 +1803,14 @@
                                     <Button Content="{DynamicResource UiPlantRefResetCatalog}" Click="AnimalReferenceReset_Click" />
                                 </StackPanel>
                                 <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                    <StackPanel Margin="0,0,10,6">
+                                        <TextBlock Text="{DynamicResource UiAnimalRefGroup}" />
+                                        <ComboBox Width="130"
+                                                  ItemsSource="{Binding AnimalReferenceGroupFilterOptions}"
+                                                  DisplayMemberPath="Label"
+                                                  SelectedValuePath="Code"
+                                                  SelectedValue="{Binding AnimalReferenceGroupFilterCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
                                     <StackPanel Margin="0,0,10,6"><TextBlock Text="pH min" /><TextBox Width="70" Text="{Binding AnimalFilterPhMin, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
                                     <StackPanel Margin="0,0,10,6"><TextBlock Text="pH max" /><TextBox Width="70" Text="{Binding AnimalFilterPhMax, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
                                     <StackPanel Margin="0,0,10,6"><TextBlock Text="GH min" /><TextBox Width="70" Text="{Binding AnimalFilterGhMin, UpdateSourceTrigger=PropertyChanged}" /></StackPanel>
@@ -1821,6 +1834,7 @@
                                     </DataGrid.RowStyle>
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Binding="{Binding EnvironmentLabel}" Width="120"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefEnvironment}" /></DataGridTextColumn.Header></DataGridTextColumn>
+                                        <DataGridTextColumn Binding="{Binding GroupLabel}" Width="110"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiAnimalRefGroup}" /></DataGridTextColumn.Header></DataGridTextColumn>
                                         <DataGridTextColumn Binding="{Binding LocalizedCommonName}" Width="160"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefCommonName}" /></DataGridTextColumn.Header></DataGridTextColumn>
                                         <DataGridTextColumn Binding="{Binding ScientificName}" Width="180"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefScientificName}" /></DataGridTextColumn.Header></DataGridTextColumn>
                                         <DataGridTextColumn Binding="{Binding PhMin}" Width="80" HeaderStyle="{StaticResource NumericDataGridColumnHeaderStyle}" ElementStyle="{StaticResource PlantRefPhCellStyle}"><DataGridTextColumn.Header><TextBlock Text="{DynamicResource UiPlantRefPhMin}" /></DataGridTextColumn.Header></DataGridTextColumn>

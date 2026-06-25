@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS PlantReferenceImportCandidates (
 CREATE TABLE IF NOT EXISTS AnimalReferences (
     Id CHAR(36) NOT NULL PRIMARY KEY,
     Environment VARCHAR(40) NOT NULL,
+    FaunaGroup VARCHAR(40) NOT NULL DEFAULT 'Fish',
     CommonName VARCHAR(160) NOT NULL,
     CommonNameFr VARCHAR(160) NULL,
     CommonNameEn VARCHAR(160) NULL,
@@ -180,6 +181,7 @@ CREATE TABLE IF NOT EXISTS AnimalReferenceImportCandidates (
     SourceName VARCHAR(80) NOT NULL,
     SourceUrl VARCHAR(512) NOT NULL,
     Environment VARCHAR(40) NOT NULL,
+    FaunaGroup VARCHAR(40) NOT NULL DEFAULT 'Fish',
     CommonName VARCHAR(160) NULL,
     CommonNameFr VARCHAR(160) NULL,
     CommonNameEn VARCHAR(160) NULL,

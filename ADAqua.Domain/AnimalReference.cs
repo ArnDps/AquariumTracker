@@ -6,10 +6,19 @@ public enum AnimalReferenceEnvironment
     Marine
 }
 
+public enum AnimalReferenceGroup
+{
+    Fish,
+    Shrimp,
+    Snail,
+    Other
+}
+
 public sealed class AnimalReference
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public AnimalReferenceEnvironment Environment { get; set; } = AnimalReferenceEnvironment.FreshwaterTropical;
+    public AnimalReferenceGroup Group { get; set; } = AnimalReferenceGroup.Fish;
     public string CommonName { get; set; } = string.Empty;
     public string CommonNameFr { get; set; } = string.Empty;
     public string CommonNameEn { get; set; } = string.Empty;

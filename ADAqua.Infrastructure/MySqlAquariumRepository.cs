@@ -14,9 +14,13 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     private static readonly TimeSpan WebRequestTimeout = TimeSpan.FromSeconds(35);
     private const int WebRequestMaxAttempts = 3;
     private static readonly TimeSpan WebRetryDelay = TimeSpan.FromMilliseconds(800);
+    private const int DatabaseMaxAttempts = 3;
+    private static readonly TimeSpan DatabaseRetryBaseDelay = TimeSpan.FromMilliseconds(120);
     private const int MinimumPlantEssentialParameterCount = 4;
     private const int MinimumAnimalEssentialParameterCount = 4;
     private const string FreshwaterAquariumFishListUrl = "https://en.wikipedia.org/wiki/List_of_freshwater_aquarium_fish_species";
+    private const string FreshwaterAquariumInvertebrateListUrl = "https://en.wikipedia.org/wiki/List_of_freshwater_aquarium_invertebrate_species";
+    private const string MarineAquariumInvertebrateListUrl = "https://en.wikipedia.org/wiki/List_of_marine_aquarium_invertebrate_species";
     private const string ContainerTypeAquarium = "Aquarium";
     private const string ContainerTypeFishPond = "FishPond";
     private const string WaterTypeFreshwaterTropical = "FreshwaterTropical";
@@ -47,13 +51,41 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         return aquariums.Values.OrderBy(aquarium => aquarium.Name).ToList();
     }
 
-    public async Task SaveAsync(Aquarium aquarium, CancellationToken cancellationToken = default)
+    public Task SaveAsync(Aquarium aquarium, CancellationToken cancellationToken = default)
+    {
+        return ExecuteWithTransientRetryAsync(token => SaveFullAsync(aquarium, token), cancellationToken);
+    }
+
+    public Task SaveSheetAsync(Aquarium aquarium, CancellationToken cancellationToken = default)
+    {
+        return ExecuteWithTransientRetryAsync(token => SaveSheetCoreAsync(aquarium, token), cancellationToken);
+    }
+
+    private async Task SaveFullAsync(Aquarium aquarium, CancellationToken cancellationToken)
     {
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
         await EnsureAquariumChildSchemaUpgradedAsync(connection, cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
+        await SaveAquariumHeaderAsync(connection, transaction, aquarium, cancellationToken);
+        await SaveChildrenAsync(connection, transaction, aquarium, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task SaveSheetCoreAsync(Aquarium aquarium, CancellationToken cancellationToken)
+    {
+        await using var connection = new MySqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await EnsureAquariumChildSchemaUpgradedAsync(connection, cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        await SaveAquariumHeaderAsync(connection, transaction, aquarium, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private static async Task SaveAquariumHeaderAsync(MySqlConnection connection, MySqlTransaction transaction, Aquarium aquarium, CancellationToken cancellationToken)
+    {
         var containerType = NormalizeContainerTypeCode(aquarium.ContainerType);
         var waterType = IsFishPondContainerType(containerType)
             ? WaterTypeFreshwaterTropical
@@ -83,9 +115,6 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             Parameter("@WaterType", waterType),
             Parameter("@StartedOn", aquarium.StartedOn.ToDateTime(TimeOnly.MinValue)),
             Parameter("@Notes", aquarium.Notes));
-
-        await SaveChildrenAsync(connection, transaction, aquarium, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task DeleteAsync(Guid aquariumId, CancellationToken cancellationToken = default)
@@ -192,11 +221,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         var references = new List<AnimalReference>();
         await using var command = new MySqlCommand(
             """
-            SELECT Id, Environment, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName, PhMin, PhMax, GhMin, GhMax, KhMin, KhMax,
+            SELECT Id, Environment, FaunaGroup, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName, PhMin, PhMax, GhMin, GhMax, KhMin, KhMax,
                    TemperatureMin, TemperatureMax, AmmoniaMin, AmmoniaMax, NitritesMin, NitritesMax,
                    NitratesMin, NitratesMax, VolumeMinLiters, Behavior, Compatibility, SourceUrl
             FROM AnimalReferences
-            ORDER BY Environment, CommonName;
+            ORDER BY Environment, FaunaGroup, CommonName;
             """, connection);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
@@ -205,29 +234,30 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             {
                 Id = ReadGuid(reader, 0),
                 Environment = Enum.Parse<AnimalReferenceEnvironment>(reader.GetString(1)),
-                CommonName = reader.GetString(2),
-                CommonNameFr = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
-                CommonNameEn = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-                CommonNameDe = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
-                ScientificName = reader.GetString(6),
-                PhMin = ReadNullableDecimal(reader, 7),
-                PhMax = ReadNullableDecimal(reader, 8),
-                GhMin = ReadNullableDecimal(reader, 9),
-                GhMax = ReadNullableDecimal(reader, 10),
-                KhMin = ReadNullableDecimal(reader, 11),
-                KhMax = ReadNullableDecimal(reader, 12),
-                TemperatureMin = ReadNullableDecimal(reader, 13),
-                TemperatureMax = ReadNullableDecimal(reader, 14),
-                AmmoniaMin = ReadNullableDecimal(reader, 15),
-                AmmoniaMax = ReadNullableDecimal(reader, 16),
-                NitritesMin = ReadNullableDecimal(reader, 17),
-                NitritesMax = ReadNullableDecimal(reader, 18),
-                NitratesMin = ReadNullableDecimal(reader, 19),
-                NitratesMax = ReadNullableDecimal(reader, 20),
-                VolumeMinLiters = reader.IsDBNull(21) ? null : reader.GetInt32(21),
-                Behavior = reader.GetString(22),
-                Compatibility = reader.GetString(23),
-                SourceUrl = reader.GetString(24)
+                Group = reader.IsDBNull(2) ? AnimalReferenceGroup.Fish : ParseAnimalReferenceGroup(reader.GetString(2)),
+                CommonName = reader.GetString(3),
+                CommonNameFr = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                CommonNameEn = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                CommonNameDe = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                ScientificName = reader.GetString(7),
+                PhMin = ReadNullableDecimal(reader, 8),
+                PhMax = ReadNullableDecimal(reader, 9),
+                GhMin = ReadNullableDecimal(reader, 10),
+                GhMax = ReadNullableDecimal(reader, 11),
+                KhMin = ReadNullableDecimal(reader, 12),
+                KhMax = ReadNullableDecimal(reader, 13),
+                TemperatureMin = ReadNullableDecimal(reader, 14),
+                TemperatureMax = ReadNullableDecimal(reader, 15),
+                AmmoniaMin = ReadNullableDecimal(reader, 16),
+                AmmoniaMax = ReadNullableDecimal(reader, 17),
+                NitritesMin = ReadNullableDecimal(reader, 18),
+                NitritesMax = ReadNullableDecimal(reader, 19),
+                NitratesMin = ReadNullableDecimal(reader, 20),
+                NitratesMax = ReadNullableDecimal(reader, 21),
+                VolumeMinLiters = reader.IsDBNull(22) ? null : reader.GetInt32(22),
+                Behavior = reader.GetString(23),
+                Compatibility = reader.GetString(24),
+                SourceUrl = reader.GetString(25)
             });
         }
 
@@ -523,6 +553,27 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             parameters.ToArray());
     }
 
+    private static async Task ExecuteWithTransientRetryAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await action(cancellationToken);
+                return;
+            }
+            catch (MySqlException exception) when (IsTransientTransactionFailure(exception) && attempt < DatabaseMaxAttempts)
+            {
+                var delay = TimeSpan.FromMilliseconds(DatabaseRetryBaseDelay.TotalMilliseconds * attempt);
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+    }
+
+    private static bool IsTransientTransactionFailure(MySqlException exception)
+    {
+        return exception.Number is 1205 or 1213;
+    }
     private static async Task ExecuteAsync(MySqlConnection connection, MySqlTransaction? transaction, string sql, CancellationToken cancellationToken, params MySqlParameter[] parameters)
     {
         await using var command = new MySqlCommand(sql, connection, transaction);
@@ -599,6 +650,13 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         return Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed)
             ? parsed
             : fallback;
+    }
+
+    private static AnimalReferenceGroup ParseAnimalReferenceGroup(string? value)
+    {
+        return Enum.TryParse<AnimalReferenceGroup>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : AnimalReferenceGroup.Fish;
     }
 
     private static decimal? ReadNullableDecimal(MySqlDataReader reader, int ordinal)
@@ -692,10 +750,10 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         const string existsSql = "SELECT COUNT(*) FROM AnimalReferences WHERE Environment = @Environment AND ScientificName = @ScientificName;";
         const string insertSql =
             """
-            INSERT INTO AnimalReferences (Id, Environment, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName, PhMin, PhMax, GhMin, GhMax, KhMin, KhMax,
+            INSERT INTO AnimalReferences (Id, Environment, FaunaGroup, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName, PhMin, PhMax, GhMin, GhMax, KhMin, KhMax,
                                           TemperatureMin, TemperatureMax, AmmoniaMin, AmmoniaMax, NitritesMin, NitritesMax,
                                           NitratesMin, NitratesMax, VolumeMinLiters, Behavior, Compatibility, SourceUrl)
-            VALUES (@Id, @Environment, @CommonName, @CommonNameFr, @CommonNameEn, @CommonNameDe, @ScientificName, @PhMin, @PhMax, @GhMin, @GhMax, @KhMin, @KhMax,
+            VALUES (@Id, @Environment, @FaunaGroup, @CommonName, @CommonNameFr, @CommonNameEn, @CommonNameDe, @ScientificName, @PhMin, @PhMax, @GhMin, @GhMax, @KhMin, @KhMax,
                     @TemperatureMin, @TemperatureMax, @AmmoniaMin, @AmmoniaMax, @NitritesMin, @NitritesMax,
                     @NitratesMin, @NitratesMax, @VolumeMinLiters, @Behavior, @Compatibility, @SourceUrl);
             """;
@@ -722,6 +780,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             {
                 Parameter("@Id", animal.Id.ToString()),
                 Parameter("@Environment", animal.Environment.ToString()),
+                Parameter("@FaunaGroup", animal.Group.ToString()),
                 Parameter("@CommonName", animal.CommonName),
                 Parameter("@CommonNameFr", animal.CommonNameFr),
                 Parameter("@CommonNameEn", animal.CommonNameEn),
@@ -840,9 +899,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
     {
         var alterStatements = new[]
         {
+            "ALTER TABLE AnimalReferences ADD COLUMN FaunaGroup VARCHAR(40) NOT NULL DEFAULT 'Fish' AFTER Environment;",
             "ALTER TABLE AnimalReferences ADD COLUMN CommonNameFr VARCHAR(160) NULL AFTER CommonName;",
             "ALTER TABLE AnimalReferences ADD COLUMN CommonNameEn VARCHAR(160) NULL AFTER CommonNameFr;",
             "ALTER TABLE AnimalReferences ADD COLUMN CommonNameDe VARCHAR(160) NULL AFTER CommonNameEn;",
+            "UPDATE AnimalReferences SET FaunaGroup = 'Fish' WHERE FaunaGroup IS NULL OR FaunaGroup = '';",
             "ALTER TABLE AnimalReferences MODIFY PhMin DECIMAL(5,2) NULL;",
             "ALTER TABLE AnimalReferences MODIFY PhMax DECIMAL(5,2) NULL;",
             "ALTER TABLE AnimalReferences MODIFY GhMin DECIMAL(6,2) NULL;",
@@ -1058,6 +1119,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 SourceName VARCHAR(80) NOT NULL,
                 SourceUrl VARCHAR(512) NOT NULL,
                 Environment VARCHAR(40) NOT NULL,
+                FaunaGroup VARCHAR(40) NOT NULL DEFAULT 'Fish',
                 CommonName VARCHAR(160) NULL,
                 CommonNameFr VARCHAR(160) NULL,
                 CommonNameEn VARCHAR(160) NULL,
@@ -1093,6 +1155,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
         var alterStatements = new[]
         {
+            "ALTER TABLE AnimalReferenceImportCandidates ADD COLUMN FaunaGroup VARCHAR(40) NOT NULL DEFAULT 'Fish' AFTER Environment;",
             "ALTER TABLE AnimalReferenceImportCandidates ADD COLUMN CommonNameFr VARCHAR(160) NULL AFTER CommonName;",
             "ALTER TABLE AnimalReferenceImportCandidates ADD COLUMN CommonNameEn VARCHAR(160) NULL AFTER CommonNameFr;",
             "ALTER TABLE AnimalReferenceImportCandidates ADD COLUMN CommonNameDe VARCHAR(160) NULL AFTER CommonNameEn;"
@@ -1301,10 +1364,10 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         const string existsSql = "SELECT COUNT(*) FROM AnimalReferences WHERE ScientificName = @ScientificName;";
         const string insertSql =
             """
-            INSERT INTO AnimalReferences (Id, Environment, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName, PhMin, PhMax, GhMin, GhMax, KhMin, KhMax,
+            INSERT INTO AnimalReferences (Id, Environment, FaunaGroup, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName, PhMin, PhMax, GhMin, GhMax, KhMin, KhMax,
                                           TemperatureMin, TemperatureMax, AmmoniaMin, AmmoniaMax, NitritesMin, NitritesMax,
                                           NitratesMin, NitratesMax, VolumeMinLiters, Behavior, Compatibility, SourceUrl)
-            VALUES (@Id, @Environment, @CommonName, @CommonNameFr, @CommonNameEn, @CommonNameDe, @ScientificName, @PhMin, @PhMax, @GhMin, @GhMax, @KhMin, @KhMax,
+            VALUES (@Id, @Environment, @FaunaGroup, @CommonName, @CommonNameFr, @CommonNameEn, @CommonNameDe, @ScientificName, @PhMin, @PhMax, @GhMin, @GhMax, @KhMin, @KhMax,
                     @TemperatureMin, @TemperatureMax, @AmmoniaMin, @AmmoniaMax, @NitritesMin, @NitritesMax,
                     @NitratesMin, @NitratesMax, @VolumeMinLiters, @Behavior, @Compatibility, @SourceUrl);
             """;
@@ -1313,6 +1376,8 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         var aggregates = new Dictionary<string, AnimalReferenceAggregate>(StringComparer.OrdinalIgnoreCase);
         using var http = CreateWikiHttpClient();
         await CollectFreshwaterWikipediaListAsync(http, aggregates, counters, minimumParameterGroupCount, progress, cancellationToken);
+        await CollectInvertebrateWikipediaListAsync(http, aggregates, counters, "Wikipedia invertebres eau douce", "List_of_freshwater_aquarium_invertebrate_species", FreshwaterAquariumInvertebrateListUrl, AnimalReferenceEnvironment.FreshwaterTropical, minimumParameterGroupCount, progress, cancellationToken);
+        await CollectInvertebrateWikipediaListAsync(http, aggregates, counters, "Wikipedia invertebres eau de mer", "List_of_marine_aquarium_invertebrate_species", MarineAquariumInvertebrateListUrl, AnimalReferenceEnvironment.Marine, minimumParameterGroupCount, progress, cancellationToken);
         await CollectFishFishReferencesAsync(http, aggregates, counters, minimumParameterGroupCount, progress, cancellationToken);
         await CollectFishipediaReferencesAsync(http, aggregates, counters, minimumParameterGroupCount, progress, cancellationToken);
         await CollectLiveAquariaReferencesAsync(http, aggregates, counters, minimumParameterGroupCount, progress, cancellationToken);
@@ -1376,7 +1441,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
 
     public async Task UpdateAnimalReferenceAsync(AnimalReference reference, CancellationToken cancellationToken = default)
     {
-        SanitizeAnimalReferenceForStorage(reference);
+        SanitizeAnimalReferenceForStorage(reference, inferGroup: false);
         await using var connection = new MySqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
         await EnsureAnimalReferenceSchemaUpgradedAsync(connection, cancellationToken);
@@ -1384,6 +1449,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             """
             UPDATE AnimalReferences
             SET Environment = @Environment,
+                FaunaGroup = @FaunaGroup,
                 CommonName = @CommonName,
                 CommonNameFr = @CommonNameFr,
                 CommonNameEn = @CommonNameEn,
@@ -1413,6 +1479,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         {
             Parameter("@Id", reference.Id.ToString()),
             Parameter("@Environment", reference.Environment.ToString()),
+            Parameter("@FaunaGroup", reference.Group.ToString()),
             Parameter("@CommonName", reference.CommonName),
             Parameter("@CommonNameFr", reference.CommonNameFr),
             Parameter("@CommonNameEn", reference.CommonNameEn),
@@ -1830,6 +1897,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         public string SourceName { get; init; } = string.Empty;
         public string SourceUrl { get; init; } = string.Empty;
         public AnimalReferenceEnvironment Environment { get; init; } = AnimalReferenceEnvironment.FreshwaterTropical;
+        public AnimalReferenceGroup Group { get; init; } = AnimalReferenceGroup.Fish;
         public string? CommonName { get; set; }
         public string? CommonNameFr { get; set; }
         public string? CommonNameEn { get; set; }
@@ -1869,6 +1937,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             }
 
             reference.Environment = source.Environment;
+            if (reference.Group == AnimalReferenceGroup.Fish || source.Group != AnimalReferenceGroup.Fish)
+            {
+                reference.Group = source.Group;
+            }
+
             reference.ScientificName = TrimToMax(source.ScientificName, 180);
             if (string.IsNullOrWhiteSpace(reference.CommonName)
                 || string.Equals(reference.CommonName, reference.ScientificName, StringComparison.OrdinalIgnoreCase))
@@ -1914,6 +1987,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             reference.CommonNameEn = TrimToMax(reference.CommonNameEn, 160);
             reference.CommonNameDe = TrimToMax(reference.CommonNameDe, 160);
             reference.ScientificName = TrimToMax(reference.ScientificName, 180);
+            if (reference.Group == AnimalReferenceGroup.Fish)
+            {
+                reference.Group = InferAnimalReferenceGroup(reference);
+            }
+
             reference.Behavior = TrimToMax(reference.Behavior, 180);
             reference.Compatibility = TrimToMax(reference.Compatibility, 220);
             reference.SourceUrl = TrimToMax(reference.SourceUrl, 512);
@@ -2172,6 +2250,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             SourceName = TrimToMax(sourceName, 80),
             SourceUrl = TrimToMax(sourceUrl, 512),
             Environment = reference?.Environment ?? environment,
+            Group = reference?.Group ?? AnimalReferenceGroup.Fish,
             CommonName = string.IsNullOrWhiteSpace(reference?.CommonName) ? null : TrimToMax(reference.CommonName, 160),
             CommonNameFr = string.IsNullOrWhiteSpace(reference?.CommonNameFr) ? null : TrimToMax(reference.CommonNameFr, 160),
             CommonNameEn = string.IsNullOrWhiteSpace(reference?.CommonNameEn) ? null : TrimToMax(reference.CommonNameEn, 160),
@@ -2248,12 +2327,12 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         const string insertSql =
             """
             INSERT INTO AnimalReferenceImportCandidates (
-                Id, RunId, CollectedAt, SourceName, SourceUrl, Environment, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName,
+                Id, RunId, CollectedAt, SourceName, SourceUrl, Environment, FaunaGroup, CommonName, CommonNameFr, CommonNameEn, CommonNameDe, ScientificName,
                 PhMin, PhMax, GhMin, GhMax, KhMin, KhMax, TemperatureMin, TemperatureMax,
                 AmmoniaMin, AmmoniaMax, NitritesMin, NitritesMax, NitratesMin, NitratesMax,
                 VolumeMinLiters, EssentialParameterCount, CandidateStatus, RejectionReason)
             VALUES (
-                @Id, @RunId, @CollectedAt, @SourceName, @SourceUrl, @Environment, @CommonName, @CommonNameFr, @CommonNameEn, @CommonNameDe, @ScientificName,
+                @Id, @RunId, @CollectedAt, @SourceName, @SourceUrl, @Environment, @FaunaGroup, @CommonName, @CommonNameFr, @CommonNameEn, @CommonNameDe, @ScientificName,
                 @PhMin, @PhMax, @GhMin, @GhMax, @KhMin, @KhMax, @TemperatureMin, @TemperatureMax,
                 @AmmoniaMin, @AmmoniaMax, @NitritesMin, @NitritesMax, @NitratesMin, @NitratesMax,
                 @VolumeMinLiters, @EssentialParameterCount, @CandidateStatus, @RejectionReason);
@@ -2273,6 +2352,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 Parameter("@SourceName", candidate.SourceName),
                 Parameter("@SourceUrl", candidate.SourceUrl),
                 Parameter("@Environment", candidate.Environment.ToString()),
+                Parameter("@FaunaGroup", candidate.Group.ToString()),
                 Parameter("@CommonName", candidate.CommonName),
                 Parameter("@CommonNameFr", candidate.CommonNameFr),
                 Parameter("@CommonNameEn", candidate.CommonNameEn),
@@ -2351,6 +2431,50 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         }
 
         progress?.Report($"Population: Wikipedia eau douce consolide ({references.Count} fiches, {aggregates.Count} candidates).");
+    }
+
+    private static async Task CollectInvertebrateWikipediaListAsync(
+        HttpClient http,
+        Dictionary<string, AnimalReferenceAggregate> aggregates,
+        AnimalImportCounters counters,
+        string sourceName,
+        string pageTitle,
+        string sourceUrl,
+        AnimalReferenceEnvironment environment,
+        int minimumParameterGroupCount,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
+        progress?.Report($"Population: collecte {sourceName}...");
+        var wikiText = await TryFetchWikipediaWikitextAsync(http, pageTitle, cancellationToken);
+        IReadOnlyList<AnimalReference> references = string.IsNullOrWhiteSpace(wikiText)
+            ? []
+            : DiscoverAquariumInvertebrateReferencesFromWikiText(wikiText, environment, sourceUrl);
+
+        progress?.Report($"Population: {sourceName} - {references.Count} crevettes/escargots candidats trouves.");
+        for (var index = 0; index < references.Count; index++)
+        {
+            var reference = references[index];
+            await EnrichAnimalReferenceFromWikipediaAsync(http, reference.ScientificName.Replace(' ', '_'), reference, cancellationToken);
+            SanitizeAnimalReferenceForStorage(reference);
+            var score = CountEssentialAnimalParameters(reference);
+            RecordAnimalImportCandidate(
+                counters,
+                sourceName,
+                reference.SourceUrl,
+                reference.Environment,
+                reference,
+                score >= minimumParameterGroupCount ? "Candidate" : "CandidateIncomplete",
+                score >= minimumParameterGroupCount ? string.Empty : BuildAnimalCandidateRejectionReason(reference, minimumParameterGroupCount));
+            MergeAnimalReference(aggregates, reference, counters);
+
+            if ((index + 1) % 25 == 0 || index + 1 == references.Count)
+            {
+                progress?.Report($"Population: {sourceName} - {index + 1}/{references.Count} fiches consolidees.");
+            }
+        }
+
+        progress?.Report($"Population: {sourceName} consolide ({references.Count} fiches, {aggregates.Count} candidates).");
     }
 
     private static async Task CollectFishFishReferencesAsync(
@@ -2727,6 +2851,262 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         return references.Values.OrderBy(reference => reference.ScientificName).ToList();
     }
 
+    private static IReadOnlyList<AnimalReference> DiscoverAquariumInvertebrateReferencesFromWikiText(
+        string wikiText,
+        AnimalReferenceEnvironment environment,
+        string sourceUrl)
+    {
+        var references = new Dictionary<string, AnimalReference>(StringComparer.OrdinalIgnoreCase);
+        var currentGroup = AnimalReferenceGroup.Other;
+        foreach (var rawLine in wikiText.Split('\n'))
+        {
+            var line = rawLine.Trim();
+            if (line.StartsWith("==", StringComparison.Ordinal))
+            {
+                currentGroup = InferInvertebrateGroupFromHeading(CleanWikiText(line));
+                continue;
+            }
+
+            if (!line.StartsWith('*'))
+            {
+                continue;
+            }
+
+            var cleaned = CleanWikiText(line.TrimStart('*', ' '));
+            var group = InferInvertebrateGroupFromText(cleaned, currentGroup);
+            if (group is not AnimalReferenceGroup.Shrimp and not AnimalReferenceGroup.Snail)
+            {
+                continue;
+            }
+
+            AddInvertebrateReferenceFromText(references, cleaned, group, environment, sourceUrl);
+        }
+
+        foreach (var row in Regex.Split(wikiText, @"\n\|-", RegexOptions.Multiline))
+        {
+            var cells = ExtractWikiTableCells(row);
+            if (cells.Count < 2)
+            {
+                continue;
+            }
+
+            var cleanedRow = CleanWikiText(row);
+            var group = InferInvertebrateGroupFromText(cleanedRow, AnimalReferenceGroup.Other);
+            if (group is not AnimalReferenceGroup.Shrimp and not AnimalReferenceGroup.Snail)
+            {
+                continue;
+            }
+
+            var commonName = CleanCommonNameTitle(CleanWikiText(cells[0]));
+            var scientific = cells
+                .Skip(1)
+                .Select(cell => ExtractInvertebrateScientificNameFromText(CleanWikiText(cell)))
+                .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate));
+            if (!TryNormalizeScientificName(scientific, out var normalizedScientific))
+            {
+                continue;
+            }
+
+            var reference = new AnimalReference
+            {
+                Environment = environment,
+                Group = group,
+                CommonName = IsUsableCommonName(commonName, normalizedScientific) ? commonName : normalizedScientific,
+                CommonNameEn = IsUsableCommonName(commonName, normalizedScientific) ? commonName : string.Empty,
+                ScientificName = normalizedScientific,
+                SourceUrl = BuildEnglishWikipediaSpeciesUrl(normalizedScientific)
+            };
+            SanitizeAnimalReferenceForStorage(reference);
+            references.TryAdd(reference.ScientificName, reference);
+        }
+
+        return references.Values.OrderBy(reference => reference.Group).ThenBy(reference => reference.ScientificName).ToList();
+    }
+
+    private static void AddInvertebrateReferenceFromText(
+        Dictionary<string, AnimalReference> references,
+        string text,
+        AnimalReferenceGroup group,
+        AnimalReferenceEnvironment environment,
+        string sourceUrl)
+    {
+        var scientific = ExtractInvertebrateScientificNameFromText(text);
+        if (!TryNormalizeScientificName(scientific, out var normalizedScientific))
+        {
+            return;
+        }
+
+        var commonName = ExtractCommonNameFromInvertebrateWikiLine(text, normalizedScientific);
+        var reference = new AnimalReference
+        {
+            Environment = environment,
+            Group = group,
+            CommonName = commonName,
+            CommonNameEn = IsUsableCommonName(commonName, normalizedScientific) ? commonName : string.Empty,
+            ScientificName = normalizedScientific,
+            SourceUrl = BuildEnglishWikipediaSpeciesUrl(normalizedScientific)
+        };
+        SanitizeAnimalReferenceForStorage(reference);
+        references.TryAdd(reference.ScientificName, reference);
+    }
+
+    private static AnimalReferenceGroup InferInvertebrateGroupFromHeading(string heading)
+    {
+        var lowered = heading.ToLowerInvariant();
+        if (lowered.Contains("shrimp", StringComparison.Ordinal))
+        {
+            return AnimalReferenceGroup.Shrimp;
+        }
+
+        if (lowered.Contains("gastropod", StringComparison.Ordinal)
+            || lowered.Contains("bivalve", StringComparison.Ordinal)
+            || lowered.Contains("snail", StringComparison.Ordinal)
+            || lowered.Contains("mollusc", StringComparison.Ordinal)
+            || lowered.Contains("mollusk", StringComparison.Ordinal))
+        {
+            return AnimalReferenceGroup.Snail;
+        }
+
+        return AnimalReferenceGroup.Other;
+    }
+
+    private static AnimalReferenceGroup InferInvertebrateGroupFromText(string text, AnimalReferenceGroup fallbackGroup)
+    {
+        var lowered = text.ToLowerInvariant();
+        if (lowered.Contains("shrimp", StringComparison.Ordinal)
+            || lowered.Contains("prawn", StringComparison.Ordinal)
+            || lowered.Contains("caridina", StringComparison.Ordinal)
+            || lowered.Contains("neocaridina", StringComparison.Ordinal)
+            || lowered.Contains("atyopsis", StringComparison.Ordinal)
+            || lowered.Contains("atya ", StringComparison.Ordinal)
+            || lowered.Contains("lysmata", StringComparison.Ordinal)
+            || lowered.Contains("stenopus", StringComparison.Ordinal)
+            || lowered.Contains("rhynchocinetes", StringComparison.Ordinal)
+            || lowered.Contains("thor amboinensis", StringComparison.Ordinal)
+            || lowered.Contains("palaemon", StringComparison.Ordinal)
+            || lowered.Contains("palaemonetes", StringComparison.Ordinal)
+            || lowered.Contains("macrobrachium", StringComparison.Ordinal))
+        {
+            return AnimalReferenceGroup.Shrimp;
+        }
+
+        if (lowered.Contains("snail", StringComparison.Ordinal)
+            || lowered.Contains("gastropod", StringComparison.Ordinal)
+            || lowered.Contains("bivalve", StringComparison.Ordinal)
+            || lowered.Contains("mollusc", StringComparison.Ordinal)
+            || lowered.Contains("mollusk", StringComparison.Ordinal)
+            || lowered.Contains("clam", StringComparison.Ordinal)
+            || lowered.Contains("oyster", StringComparison.Ordinal)
+            || lowered.Contains("scallop", StringComparison.Ordinal)
+            || lowered.Contains("neritina", StringComparison.Ordinal)
+            || lowered.Contains("nerite", StringComparison.Ordinal)
+            || lowered.Contains("vittina", StringComparison.Ordinal)
+            || lowered.Contains("pomacea", StringComparison.Ordinal)
+            || lowered.Contains("asolene", StringComparison.Ordinal)
+            || lowered.Contains("marisa", StringComparison.Ordinal)
+            || lowered.Contains("lymnaea", StringComparison.Ordinal)
+            || lowered.Contains("clithon", StringComparison.Ordinal)
+            || lowered.Contains("septaria", StringComparison.Ordinal)
+            || lowered.Contains("brotia", StringComparison.Ordinal)
+            || lowered.Contains("anentome", StringComparison.Ordinal)
+            || lowered.Contains("planorb", StringComparison.Ordinal)
+            || lowered.Contains("melanoides", StringComparison.Ordinal)
+            || lowered.Contains("tylomelania", StringComparison.Ordinal)
+            || lowered.Contains("nassarius", StringComparison.Ordinal)
+            || lowered.Contains("turbo ", StringComparison.Ordinal)
+            || lowered.Contains("trochus", StringComparison.Ordinal)
+            || lowered.Contains("cerith", StringComparison.Ordinal)
+            || lowered.Contains("stomatella", StringComparison.Ordinal)
+            || lowered.Contains("cowrie", StringComparison.Ordinal)
+            || lowered.Contains("conch", StringComparison.Ordinal)
+            || lowered.Contains("haliotis", StringComparison.Ordinal)
+            || lowered.Contains("cypraea", StringComparison.Ordinal)
+            || lowered.Contains("engina", StringComparison.Ordinal)
+            || lowered.Contains("eustrombus", StringComparison.Ordinal)
+            || lowered.Contains("spondylus", StringComparison.Ordinal)
+            || lowered.Contains("hippopus", StringComparison.Ordinal)
+            || lowered.Contains("tridacna", StringComparison.Ordinal)
+            || lowered.Contains("ctenoides", StringComparison.Ordinal)
+            || lowered.Contains("corbicula", StringComparison.Ordinal)
+            || lowered.Contains("elysia", StringComparison.Ordinal)
+            || lowered.Contains("aplysia", StringComparison.Ordinal)
+            || lowered.Contains("dolabella", StringComparison.Ordinal))
+        {
+            return AnimalReferenceGroup.Snail;
+        }
+
+        return fallbackGroup;
+    }
+
+    private static string ExtractCommonNameFromInvertebrateWikiLine(string text, string normalizedScientific)
+    {
+        var parenthesized = Regex.Match(text, @"\((?<common>[^)]+)\)");
+        if (parenthesized.Success)
+        {
+            var candidate = CleanCommonNameTitle(parenthesized.Groups["common"].Value);
+            if (IsUsableCommonName(candidate, normalizedScientific))
+            {
+                return candidate;
+            }
+        }
+
+        var cleaned = CleanCommonNameTitle(text);
+        var scientificParts = normalizedScientific.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var leadingScientificPattern = scientificParts.Length == 2
+            ? $@"^\s*{Regex.Escape(scientificParts[0])}\s+(?:(?:cf|aff)\.\s*)?{Regex.Escape(scientificParts[1])}\b(?:\s+var\.\s+[a-z0-9\-]+)?\s*"
+            : $@"^\s*{Regex.Escape(normalizedScientific)}\b\s*";
+        var suffix = Regex.Replace(
+                cleaned,
+                leadingScientificPattern,
+                string.Empty,
+                RegexOptions.IgnoreCase)
+            .Trim();
+        suffix = Regex.Replace(suffix, @"^[,;:\-\u2013\u2014]+", string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(suffix))
+        {
+            var candidate = Regex.Split(suffix, @"\s{2,}|[.;]")[0].Trim();
+            candidate = Regex.Replace(candidate, @"\s*\[[^\]]+\]\s*", string.Empty).Trim();
+            if (IsUsableCommonName(candidate, normalizedScientific))
+            {
+                return candidate;
+            }
+        }
+
+        return normalizedScientific;
+    }
+
+    private static string? ExtractInvertebrateScientificNameFromText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        foreach (Match match in Regex.Matches(text, @"\b(?<genus>[A-Z][a-z]{2,})\s+(?:(?:cf|aff)\.\s*)?(?<species>[a-z][a-z\-]{2,})\b"))
+        {
+            var genus = match.Groups["genus"].Value;
+            var species = match.Groups["species"].Value;
+            if (species.Equals("species", StringComparison.OrdinalIgnoreCase)
+                || species.Equals("complex", StringComparison.OrdinalIgnoreCase)
+                || IsSubspeciesToken(species))
+            {
+                continue;
+            }
+
+            if (LooksLikeScientificName(genus, species))
+            {
+                return NormalizeScientificName(genus, species);
+            }
+        }
+
+        return null;
+    }
+
+    private static string BuildEnglishWikipediaSpeciesUrl(string scientificName)
+    {
+        return $"https://en.wikipedia.org/wiki/{scientificName.Replace(' ', '_')}";
+    }
+
     private static List<string> ExtractWikiTableCells(string row)
     {
         var cells = new List<string>();
@@ -3002,12 +3382,13 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
                 insert.Parameters.AddRange(new[]
                 {
                     Parameter("@Id", animal.Id.ToString()),
-                Parameter("@Environment", animal.Environment.ToString()),
-                Parameter("@CommonName", animal.CommonName),
-                Parameter("@CommonNameFr", animal.CommonNameFr),
-                Parameter("@CommonNameEn", animal.CommonNameEn),
-                Parameter("@CommonNameDe", animal.CommonNameDe),
-                Parameter("@ScientificName", animal.ScientificName),
+                    Parameter("@Environment", animal.Environment.ToString()),
+                    Parameter("@FaunaGroup", animal.Group.ToString()),
+                    Parameter("@CommonName", animal.CommonName),
+                    Parameter("@CommonNameFr", animal.CommonNameFr),
+                    Parameter("@CommonNameEn", animal.CommonNameEn),
+                    Parameter("@CommonNameDe", animal.CommonNameDe),
+                    Parameter("@ScientificName", animal.ScientificName),
                     Parameter("@PhMin", animal.PhMin),
                     Parameter("@PhMax", animal.PhMax),
                     Parameter("@GhMin", animal.GhMin),
@@ -3136,6 +3517,11 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             SET CommonNameFr = COALESCE(NULLIF(CommonNameFr, ''), NULLIF(@CommonNameFr, '')),
                 CommonNameEn = COALESCE(NULLIF(CommonNameEn, ''), NULLIF(@CommonNameEn, '')),
                 CommonNameDe = COALESCE(NULLIF(CommonNameDe, ''), NULLIF(@CommonNameDe, '')),
+                FaunaGroup = CASE
+                    WHEN FaunaGroup IS NULL OR FaunaGroup = ''
+                        THEN @FaunaGroup
+                    ELSE FaunaGroup
+                END,
                 CommonName = CASE
                     WHEN CommonName IS NULL OR CommonName = '' OR CommonName = ScientificName
                         THEN COALESCE(NULLIF(@CommonNameFr, ''), NULLIF(@CommonNameEn, ''), NULLIF(@CommonNameDe, ''), CommonName)
@@ -3161,6 +3547,7 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
             Parameter("@CommonNameFr", animal.CommonNameFr),
             Parameter("@CommonNameEn", animal.CommonNameEn),
             Parameter("@CommonNameDe", animal.CommonNameDe),
+            Parameter("@FaunaGroup", animal.Group.ToString()),
             Parameter("@TemperatureMin", animal.TemperatureMin),
             Parameter("@TemperatureMax", animal.TemperatureMax),
             Parameter("@ShouldUpdateTemperature", shouldUpdateTemperature)
@@ -4631,13 +5018,18 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         }
     }
 
-    private static void SanitizeAnimalReferenceForStorage(AnimalReference reference)
+    private static void SanitizeAnimalReferenceForStorage(AnimalReference reference, bool inferGroup = true)
     {
         reference.CommonName = CapitalizeFirstLetter(reference.CommonName, 160);
         reference.CommonNameFr = CapitalizeFirstLetter(reference.CommonNameFr, 160);
         reference.CommonNameEn = CapitalizeFirstLetter(reference.CommonNameEn, 160);
         reference.CommonNameDe = CapitalizeFirstLetter(reference.CommonNameDe, 160);
         reference.ScientificName = TrimToMax(reference.ScientificName, 180);
+        if (inferGroup && reference.Group == AnimalReferenceGroup.Fish)
+        {
+            reference.Group = InferAnimalReferenceGroup(reference);
+        }
+
         reference.Behavior = TrimToMax(reference.Behavior, 180);
         reference.Compatibility = TrimToMax(reference.Compatibility, 220);
         reference.SourceUrl = TrimToMax(reference.SourceUrl, 512);
@@ -4666,6 +5058,63 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         {
             reference.VolumeMinLiters = null;
         }
+    }
+
+    private static AnimalReferenceGroup InferAnimalReferenceGroup(AnimalReference reference)
+    {
+        var text = string.Join(
+                ' ',
+                reference.CommonName,
+                reference.CommonNameFr,
+                reference.CommonNameEn,
+                reference.CommonNameDe,
+                reference.ScientificName,
+                reference.Behavior,
+                reference.Compatibility)
+            .ToLowerInvariant();
+
+        if (text.Contains("crevette", StringComparison.Ordinal)
+            || text.Contains("shrimp", StringComparison.Ordinal)
+            || text.Contains("garnele", StringComparison.Ordinal)
+            || text.Contains("garnelen", StringComparison.Ordinal)
+            || text.Contains("caridina", StringComparison.Ordinal)
+            || text.Contains("neocaridina", StringComparison.Ordinal)
+            || text.Contains("lysmata", StringComparison.Ordinal)
+            || text.Contains("atyopsis", StringComparison.Ordinal)
+            || text.Contains("palaemon", StringComparison.Ordinal))
+        {
+            return AnimalReferenceGroup.Shrimp;
+        }
+
+        if (text.Contains("escargot", StringComparison.Ordinal)
+            || text.Contains("snail", StringComparison.Ordinal)
+            || text.Contains("schnecke", StringComparison.Ordinal)
+            || text.Contains("schnecken", StringComparison.Ordinal)
+            || text.Contains("mollusque", StringComparison.Ordinal)
+            || text.Contains("mollusc", StringComparison.Ordinal)
+            || text.Contains("mollusk", StringComparison.Ordinal)
+            || text.Contains("bivalve", StringComparison.Ordinal)
+            || text.Contains("clam", StringComparison.Ordinal)
+            || text.Contains("oyster", StringComparison.Ordinal)
+            || text.Contains("scallop", StringComparison.Ordinal)
+            || text.Contains("cowrie", StringComparison.Ordinal)
+            || text.Contains("conch", StringComparison.Ordinal)
+            || text.Contains("neritina", StringComparison.Ordinal)
+            || text.Contains("nerite", StringComparison.Ordinal)
+            || text.Contains("pomacea", StringComparison.Ordinal)
+            || text.Contains("planorbe", StringComparison.Ordinal)
+            || text.Contains("planorb", StringComparison.Ordinal)
+            || text.Contains("melanoides", StringComparison.Ordinal)
+            || text.Contains("nassarius", StringComparison.Ordinal)
+            || text.Contains("turbo", StringComparison.Ordinal)
+            || text.Contains("tridacna", StringComparison.Ordinal)
+            || text.Contains("spondylus", StringComparison.Ordinal)
+            || text.Contains("corbicula", StringComparison.Ordinal))
+        {
+            return AnimalReferenceGroup.Snail;
+        }
+
+        return reference.Group;
     }
 
     private static (decimal? Min, decimal? Max) NormalizeNullableRange(decimal? min, decimal? max)
@@ -5131,8 +5580,14 @@ public sealed class MySqlAquariumRepository(string connectionString) : IAquarium
         new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, CommonName = "Corydoras paleatus", ScientificName = "Corydoras paleatus", PhMin = 6.0m, PhMax = 7.5m, GhMin = 2m, GhMax = 15m, KhMin = 1m, KhMax = 8m, TemperatureMin = 22m, TemperatureMax = 26m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 20m, VolumeMinLiters = 80, Behavior = "Gregaire de fond", Compatibility = "En groupe 6+", SourceUrl = "https://www.fishipedia.fr/fr/poissons/corydoras-paleatus" },
         new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, CommonName = "Ancistrus", ScientificName = "Ancistrus cf. cirrhosus", PhMin = 6.0m, PhMax = 7.5m, GhMin = 2m, GhMax = 15m, KhMin = 1m, KhMax = 8m, TemperatureMin = 23m, TemperatureMax = 28m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 25m, VolumeMinLiters = 120, Behavior = "Territorial modere", Compatibility = "Bonne en communautaire", SourceUrl = "https://www.aquachange.fr/poisson_fiche_aquarium.php?id=22" },
         new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, CommonName = "Discus", ScientificName = "Symphysodon aequifasciatus", PhMin = 5.5m, PhMax = 7.0m, GhMin = 1m, GhMax = 8m, KhMin = 1m, KhMax = 4m, TemperatureMin = 28m, TemperatureMax = 31m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 15m, VolumeMinLiters = 350, Behavior = "Gregaire", Compatibility = "Bac specifique recommande", SourceUrl = "https://www.fishipedia.fr/fr/poissons/symphysodon-aequifasciatus" },
+        new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, Group = AnimalReferenceGroup.Shrimp, CommonName = "Crevette red cherry", CommonNameFr = "Crevette red cherry", CommonNameEn = "Cherry shrimp", CommonNameDe = "Red fire Garnele", ScientificName = "Neocaridina davidi", PhMin = 6.5m, PhMax = 8.0m, GhMin = 4m, GhMax = 14m, KhMin = 2m, KhMax = 10m, TemperatureMin = 18m, TemperatureMax = 28m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 20m, VolumeMinLiters = 20, Behavior = "Gregaire paisible", Compatibility = "Eviter gros predateurs", SourceUrl = "https://en.wikipedia.org/wiki/Neocaridina_davidi" },
+        new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, Group = AnimalReferenceGroup.Shrimp, CommonName = "Crevette amano", CommonNameFr = "Crevette amano", CommonNameEn = "Amano shrimp", CommonNameDe = "Amanogarnele", ScientificName = "Caridina multidentata", PhMin = 6.5m, PhMax = 7.8m, GhMin = 4m, GhMax = 15m, KhMin = 2m, KhMax = 10m, TemperatureMin = 20m, TemperatureMax = 27m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 20m, VolumeMinLiters = 40, Behavior = "Gregaire paisible", Compatibility = "Bonne en communautaire", SourceUrl = "https://en.wikipedia.org/wiki/Caridina_multidentata" },
+        new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, Group = AnimalReferenceGroup.Snail, CommonName = "Neritina natalensis", CommonNameFr = "Neritina natalensis", CommonNameEn = "Tiger nerite snail", CommonNameDe = "Rennschnecke", ScientificName = "Neritina natalensis", PhMin = 7.0m, PhMax = 8.5m, GhMin = 6m, GhMax = 20m, KhMin = 3m, KhMax = 12m, TemperatureMin = 20m, TemperatureMax = 28m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 25m, VolumeMinLiters = 20, Behavior = "Paisible algivore", Compatibility = "Compatible communautaire", SourceUrl = "https://en.wikipedia.org/wiki/Neritina_natalensis" },
+        new() { Environment = AnimalReferenceEnvironment.FreshwaterTropical, Group = AnimalReferenceGroup.Snail, CommonName = "Planorbe", CommonNameFr = "Planorbe", CommonNameEn = "Ramshorn snail", CommonNameDe = "Posthornschnecke", ScientificName = "Planorbarius corneus", PhMin = 7.0m, PhMax = 8.5m, GhMin = 5m, GhMax = 20m, KhMin = 3m, KhMax = 12m, TemperatureMin = 15m, TemperatureMax = 28m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 25m, VolumeMinLiters = 20, Behavior = "Paisible detritivore", Compatibility = "Compatible communautaire", SourceUrl = "https://en.wikipedia.org/wiki/Planorbarius_corneus" },
         new() { Environment = AnimalReferenceEnvironment.Marine, CommonName = "Poisson clown ocelle", ScientificName = "Amphiprion ocellaris", PhMin = 8.0m, PhMax = 8.4m, GhMin = 7m, GhMax = 12m, KhMin = 7m, KhMax = 12m, TemperatureMin = 24m, TemperatureMax = 27m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 10m, VolumeMinLiters = 120, Behavior = "Territorial modere", Compatibility = "Compatible recifal", SourceUrl = "https://www.fishipedia.fr/fr/poissons/amphiprion-ocellaris" },
         new() { Environment = AnimalReferenceEnvironment.Marine, CommonName = "Chirurgien jaune", ScientificName = "Zebrasoma flavescens", PhMin = 8.0m, PhMax = 8.4m, GhMin = 7m, GhMax = 12m, KhMin = 7m, KhMax = 12m, TemperatureMin = 24m, TemperatureMax = 27m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 10m, VolumeMinLiters = 450, Behavior = "Actif", Compatibility = "Peut etre territorial", SourceUrl = "https://www.fishipedia.fr/fr/poissons/zebrasoma-flavescens" },
-        new() { Environment = AnimalReferenceEnvironment.Marine, CommonName = "Chirurgien bleu", ScientificName = "Acanthurus leucosternon", PhMin = 8.0m, PhMax = 8.4m, GhMin = 7m, GhMax = 12m, KhMin = 7m, KhMax = 12m, TemperatureMin = 24m, TemperatureMax = 27m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 10m, VolumeMinLiters = 600, Behavior = "Nageur rapide", Compatibility = "Espace important", SourceUrl = "https://www.aquaportail.com/fiche-poisson-808-acanthurus-leucosternon.html" }
+        new() { Environment = AnimalReferenceEnvironment.Marine, CommonName = "Chirurgien bleu", ScientificName = "Acanthurus leucosternon", PhMin = 8.0m, PhMax = 8.4m, GhMin = 7m, GhMax = 12m, KhMin = 7m, KhMax = 12m, TemperatureMin = 24m, TemperatureMax = 27m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 10m, VolumeMinLiters = 600, Behavior = "Nageur rapide", Compatibility = "Espace important", SourceUrl = "https://www.aquaportail.com/fiche-poisson-808-acanthurus-leucosternon.html" },
+        new() { Environment = AnimalReferenceEnvironment.Marine, Group = AnimalReferenceGroup.Shrimp, CommonName = "Crevette nettoyeuse", CommonNameFr = "Crevette nettoyeuse", CommonNameEn = "Cleaner shrimp", CommonNameDe = "Weissband-Putzergarnele", ScientificName = "Lysmata amboinensis", PhMin = 8.0m, PhMax = 8.4m, GhMin = 7m, GhMax = 12m, KhMin = 7m, KhMax = 12m, TemperatureMin = 24m, TemperatureMax = 28m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 10m, VolumeMinLiters = 80, Behavior = "Paisible nettoyeuse", Compatibility = "Compatible recifal", SourceUrl = "https://en.wikipedia.org/wiki/Lysmata_amboinensis" },
+        new() { Environment = AnimalReferenceEnvironment.Marine, Group = AnimalReferenceGroup.Snail, CommonName = "Escargot turbo", CommonNameFr = "Escargot turbo", CommonNameEn = "Turbo snail", CommonNameDe = "Turboschnecke", ScientificName = "Turbo fluctuosa", PhMin = 8.0m, PhMax = 8.4m, GhMin = 7m, GhMax = 12m, KhMin = 7m, KhMax = 12m, TemperatureMin = 23m, TemperatureMax = 27m, AmmoniaMin = 0m, AmmoniaMax = 0.02m, NitritesMin = 0m, NitritesMax = 0.05m, NitratesMin = 0m, NitratesMax = 10m, VolumeMinLiters = 60, Behavior = "Paisible algivore", Compatibility = "Compatible recifal", SourceUrl = "https://en.wikipedia.org/wiki/Turbo_fluctuosa" }
     ];
 }
